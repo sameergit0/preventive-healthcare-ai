@@ -1,17 +1,10 @@
 # ===============================
-# Python cache & compiled files
+# Python cache
 # ===============================
 __pycache__/
-*.py[cod]
-*$py.class
-
-# ===============================
-# Build / packaging
-# ===============================
-build/
-dist/
-*.egg-info/
-wheels/
+*.pyc
+*.pyo
+*.pyd
 
 # ===============================
 # Virtual environments
@@ -19,7 +12,12 @@ wheels/
 .venv/
 venv/
 env/
-ENV/
+
+# ===============================
+# Git
+# ===============================
+.git/
+.gitignore
 
 # ===============================
 # Environment variables (IMPORTANT)
@@ -34,45 +32,33 @@ logs/
 *.log
 
 # ===============================
-# User uploads (runtime data)
-# ===============================
-uploads/
-
-# ===============================
-# Database (local)
+# Database (local only)
 # ===============================
 *.db
 *.sqlite3
 
 # ===============================
-# IDE / Editor
+# Testing / cache
+# ===============================
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.dmypy.json
+
+# ===============================
+# IDE / OS files
 # ===============================
 .vscode/
 .idea/
-*.iml
-*.swp
-*.swo
-
-# ===============================
-# OS files
-# ===============================
 .DS_Store
 Thumbs.db
 
 # ===============================
-# Testing / coverage
+# Temp / runtime files
 # ===============================
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.hypothesis/
-
-# ===============================
-# Type checking
-# ===============================
-.mypy_cache/
-.dmypy.json
+*.tmp
+*.temp
 
 # ===============================
 # Jupyter
@@ -80,19 +66,11 @@ htmlcov/
 .ipynb_checkpoints/
 
 # ===============================
-# Temp files
+# Alembic cache
 # ===============================
-*.tmp
-*.temp
+alembic/versions/__pycache__/
 
 # ===============================
-# PyInstaller
+# Uploads (if local dev data)
 # ===============================
-*.spec
-
-# ===============================
-# Docker
-# ===============================
-
-.docker/
-docker-compose.override.yml
+uploads/

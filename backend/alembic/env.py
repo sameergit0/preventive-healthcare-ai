@@ -11,6 +11,9 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+if not DATABASE_URL:
+    raise Exception("DATABASE_URL is not set in environment variables")
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -46,7 +49,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = DATABASE_URL
+
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -67,7 +71,7 @@ def run_migrations_online() -> None:
     """
     from sqlalchemy import create_engine
 
-    connectable = create_engine(DATABASE_URL)
+    connectable = create_engine(DATABASE_URL, pool_pre_ping=True)
 
     with connectable.connect() as connection:
         context.configure(

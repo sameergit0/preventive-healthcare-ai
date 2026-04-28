@@ -33,12 +33,13 @@ It follows a **modular, production-ready backend design** suitable for real-worl
 ## 🛠 Tech Stack
 
 * **Backend**: FastAPI, Python 3.12+
-* **Database**: MySQL + SQLAlchemy ORM
+* **Database**: Neon PostgreSQL (serverless) + SQLAlchemy ORM
 * **Migrations**: Alembic
 * **Auth**: JWT + bcrypt
 * **Validation**: Pydantic
 * **Server**: Uvicorn
 * **Config**: python-dotenv
+* **Containerization**: Docker, Docker Compose
 
 ---
 
@@ -65,7 +66,7 @@ test/                   # Unit tests
 ### 1. Clone repo
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/sameergit0/preventive-healthcare-ai.git
 cd backend
 ```
 
@@ -74,7 +75,7 @@ cd backend
 ### 2. Create virtual environment
 
 ```bash
-python -m venv .venv
+uv venv
 .venv\Scripts\activate
 ```
 
@@ -100,7 +101,7 @@ Example:
 
 ```env
 # ===============================
-# Database
+# Database (Neon PostgreSQL)
 # ===============================
 DATABASE_URL="dialect+driver://username:password@host:port/database"
 
@@ -146,6 +147,35 @@ uvicorn app.main:app --reload
 
 ---
 
+## 🐳 Docker Deployment
+
+### Build and run with Docker
+
+```bash
+# Build the Docker image
+docker build -t preventive-health-backend .
+
+# Run the container
+docker run -p 8000:8000 --env-file .env preventive-health-backend
+```
+
+### Using Docker Compose
+
+```bash
+# Start services with build
+docker compose up --build -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+```
+
+> **Note**: Ensure your `.env` file is properly configured before running Docker containers.
+
+---
+
 ## 📌 API Documentation
 
 * Swagger: http://localhost:8000/docs
@@ -158,6 +188,11 @@ uvicorn app.main:app --reload
 ### 🔐 Authentication
 
 * Signup / Login / Current User
+
+### 🌐 Common Timezones
+
+* Timezone
+
 
 ### 👤 Profile
 
