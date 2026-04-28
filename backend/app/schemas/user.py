@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
-import pytz
+from app.core import VALID_TIMEZONES
 
 # response models
 class MessageResponse(BaseModel):
@@ -39,7 +39,8 @@ class UserCreate(BaseModel):
     @field_validator("timezone")
     @classmethod
     def validate_timezone(cls, v: str) -> str:
-        if v not in pytz.all_timezones:
+        v = v.strip()
+        if v not in VALID_TIMEZONES:
             raise ValueError(f"Invalid timezone. Must be a valid IANA timezone (e.g., Asia/Kolkata, America/New_York)")
         return v
 

@@ -1,10 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import pytz
 
 def get_user_today(user_timezone: str):
     try:
         tz = pytz.timezone(user_timezone)
     except Exception:
-        tz = pytz.UTC 
+        tz = pytz.UTC
 
-    return datetime.now(tz).date()
+    utc_now = datetime.now(timezone.utc)   
+
+    user_time = utc_now.astimezone(tz)
+
+    return user_time.date()
