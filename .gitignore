@@ -4,6 +4,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
+.Python
 
 # ===============================
 # Build / packaging
@@ -12,6 +15,8 @@ build/
 dist/
 *.egg-info/
 wheels/
+*.egg
+pip-wheel-metadata/
 
 # ===============================
 # Virtual environments
@@ -43,6 +48,8 @@ uploads/
 # ===============================
 *.db
 *.sqlite3
+*.sqlite
+*.db-journal
 
 # ===============================
 # IDE / Editor
@@ -58,6 +65,7 @@ uploads/
 # ===============================
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # ===============================
 # Testing / coverage
@@ -67,12 +75,17 @@ Thumbs.db
 .coverage.*
 htmlcov/
 .hypothesis/
+.tox/
+.nox/
+.cache/
+.pytest_cache/
 
 # ===============================
 # Type checking
 # ===============================
 .mypy_cache/
 .dmypy.json
+.pyre/
 
 # ===============================
 # Jupyter
@@ -84,6 +97,7 @@ htmlcov/
 # ===============================
 *.tmp
 *.temp
+*~
 
 # ===============================
 # PyInstaller
@@ -93,6 +107,34 @@ htmlcov/
 # ===============================
 # Docker
 # ===============================
-
 .docker/
 docker-compose.override.yml
+
+# ===============================
+# Frontend / Node
+# ===============================
+node_modules/
+dist/
+dist-ssr/
+*.local
+.cache/
+.vite/
+.parcel-cache/
+*.tsbuildinfo
+*.tsbuildinfo.local
+coverage/
+.nyc_output/
+
+# Logs (Node)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor / IDE (additional)
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

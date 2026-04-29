@@ -21,9 +21,9 @@ This project aims to build a **scalable healthcare system** that helps users:
 preventive-healthcare-ai/
 │
 ├── backend/        # FastAPI backend (APIs, DB, auth)
-├── frontend/       # React frontend (coming soon)
+├── frontend/       # React frontend (Vite + TypeScript)
 │
-├── .gitignore
+├── .gitignore      # Combined ignores for backend & frontend
 └── README.md
 ```
 
@@ -39,10 +39,18 @@ preventive-healthcare-ai/
 * Alembic
 * JWT Authentication
 
-### Frontend (Planned)
+### Frontend
 
-* React / Vite
-* Tailwind CSS
+* React 19 with TypeScript
+* Vite – fast build tool & dev server
+* Tailwind CSS – utility-first styling
+* React Router DOM – client-side routing
+* TanStack Query (React Query) – data fetching & caching
+* Zod – schema validation
+* React Hook Form – form handling
+* Zustand – state management
+* Recharts – data visualization
+* Axios – HTTP client
 
 ### Future Enhancements
 
@@ -58,18 +66,20 @@ preventive-healthcare-ai/
 
 ```bash
 cd backend
+docker compose up --build -d  # starts backend server at http://localhost:8000
 ```
 
-Follow instructions in:
-👉 `backend/README.md`
+Follow instructions in: 👉 `backend/README.md`
 
----
-
-### Frontend Setup (Coming Soon)
+### Frontend Setup
 
 ```bash
 cd frontend
+npm install  
+npm run dev   # starts frontend server at http://localhost:5173
 ```
+
+Detailed frontend documentation: 👉 `frontend/README.md`
 
 ---
 
