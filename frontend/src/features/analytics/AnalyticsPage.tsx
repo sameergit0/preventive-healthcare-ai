@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format, subDays } from 'date-fns'
-import { Footprints, Moon, Droplet, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Footprints, Moon, Droplet, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
@@ -11,10 +11,11 @@ import { useInsights, useRecommendations, useScoreHistory, useSummary, useTrends
 import type { MetricSummary, MetricTrend, Severity, MetricType } from '@/types/api'
 import { cn, formatNumber } from '@/lib/utils'
 
-const presets: { label: string; days: number }[] = [
+const presets: { label: string; days: number | 'custom' }[] = [
   { label: '7d', days: 7 },
   { label: '30d', days: 30 },
   { label: '90d', days: 90 },
+  { label: 'Custom', days: 'custom' },
 ]
 
 const severityClass: Record<Severity, string> = {
@@ -36,9 +37,12 @@ const metricIcon: Record<MetricType, React.ReactNode> = {
 }
 
 export function AnalyticsPage() {
-  const [days, setDays] = useState(30)
-  const end = format(new Date(), 'yyyy-MM-dd')
-  const start = format(subDays(new Date(), days - 1), 'yyyy-MM-dd')
+  const [days, setDays] = useState<number | 'custom'>(30)
+  const [customStart, setCustomStart] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'))
+  const [customEnd, setCustomEnd] = useState(format(new Date(), 'yyyy-MM-dd'))
+  
+  const end = days === 'custom' ? customEnd : format(new Date(), 'yyyy-MM-dd')
+  const start = days === 'custom' ? customStart : format(subDays(new Date(), days - 1), 'yyyy-MM-dd')
   const [includeEmpty, setIncludeEmpty] = useState(true)
 
   const summary = useSummary(start, end)
@@ -56,10 +60,35 @@ export function AnalyticsPage() {
           <h1 className="text-headline-xl text-on-surface">Analytics</h1>
           <p className="mt-1 text-body-md text-on-surface-variant">{format(new Date(start), 'MMM d')} – {format(new Date(end), 'MMM d, yyyy')}</p>
         </div>
-        <div className="flex gap-2">
-          {presets.map((p) => (
-            <Chip key={p.label} selected={days === p.days} onClick={() => setDays(p.days)}>{p.label}</Chip>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          {days === 'custom' && (
+            <div className="flex items-center gap-2 mr-2">
+              <div className="flex items-center gap-1.5 rounded-lg bg-surface-container-low px-3 py-2">
+                <Calendar className="h-4 w-4 text-on-surface-variant" />
+                <input 
+                  type="date" 
+                  value={customStart} 
+                  onChange={(e) => setCustomStart(e.target.value)} 
+                  className="bg-transparent text-body-sm outline-none" 
+                />
+              </div>
+              <span className="text-on-surface-variant">→</span>
+              <div className="flex items-center gap-1.5 rounded-lg bg-surface-container-low px-3 py-2">
+                <Calendar className="h-4 w-4 text-on-surface-variant" />
+                <input 
+                  type="date" 
+                  value={customEnd} 
+                  onChange={(e) => setCustomEnd(e.target.value)} 
+                  className="bg-transparent text-body-sm outline-none" 
+                />
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2">
+            {presets.map((p) => (
+              <Chip key={p.label} selected={days === p.days} onClick={() => setDays(p.days)}>{p.label}</Chip>
+            ))}
+          </div>
         </div>
       </div>
 

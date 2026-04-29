@@ -48,8 +48,11 @@ export interface Profile {
   gender: Gender
   weight: number
   height: number
+  waist_cm: number | null
   goal: Goal
   profile_image: string | null
+  bmi: number | null
+  bmi_category: string | null
 }
 
 export interface ProfileGetResponse {

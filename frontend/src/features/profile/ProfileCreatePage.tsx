@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
@@ -31,13 +32,16 @@ export function ProfileCreatePage() {
   const onSubmit = handleSubmit(async (values) => {
     try {
       const fd = new FormData()
-      Object.entries(values).forEach(([k, v]) => fd.append(k, String(v)))
+      Object.entries(values).forEach(([k, v]) => {
+        const val = v === '' ? null : v
+        if (val !== null) fd.append(k, String(val))
+      })
       if (file) fd.append('file', file)
       await create.mutateAsync(fd)
       toast.success('Profile created')
       navigate('/dashboard', { replace: true })
-    } catch (e: any) {
-      if (e?.response?.status === 409) {
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e) && e.response?.status === 409) {
         navigate('/profile/edit', { replace: true })
         return
       }
@@ -73,6 +77,7 @@ export function ProfileCreatePage() {
             <Input label="Weight (kg)" type="number" step="0.1" min={31} max={299} error={errors.weight?.message} {...register('weight')} />
             <Input label="Height (cm)" type="number" step="0.1" min={51} max={249} error={errors.height?.message} {...register('height')} />
           </div>
+          <Input label="Waist (cm) - Optional" type="number" step="0.1" placeholder="Optional" error={errors.waist_cm?.message} {...register('waist_cm')} />
           <Controller
             control={control}
             name="goal"

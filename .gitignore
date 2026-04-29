@@ -1,140 +1,63 @@
 # ===============================
-# Python cache & compiled files
-# ===============================
-__pycache__/
-*.py[cod]
-*$py.class
-*.pyo
-*.pyd
-.Python
-
-# ===============================
-# Build / packaging
-# ===============================
-build/
-dist/
-*.egg-info/
-wheels/
-*.egg
-pip-wheel-metadata/
-
-# ===============================
-# Virtual environments
-# ===============================
-.venv/
-venv/
-env/
-ENV/
-
-# ===============================
-# Environment variables (IMPORTANT)
-# ===============================
-.env
-.env.*
-!.env.example
-
-# ===============================
-# Logs
-# ===============================
-logs/
-*.log
-
-# ===============================
-# User uploads (runtime data)
-# ===============================
-uploads/
-
-# ===============================
-# Database (local)
-# ===============================
-*.db
-*.sqlite3
-*.sqlite
-*.db-journal
-
-# ===============================
-# IDE / Editor
+# Global / IDE / OS
 # ===============================
 .vscode/
 .idea/
 *.iml
 *.swp
 *.swo
-
-# ===============================
-# OS files
-# ===============================
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# ===============================
-# Testing / coverage
-# ===============================
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.hypothesis/
-.tox/
-.nox/
-.cache/
-
-# ===============================
-# Type checking
-# ===============================
-.mypy_cache/
-.dmypy.json
-.pyre/
-
-# ===============================
-# Jupyter
-# ===============================
-.ipynb_checkpoints/
-
-# ===============================
-# Temp files
-# ===============================
 *.tmp
 *.temp
 *~
 
 # ===============================
-# PyInstaller
+# Environment variables (Show .env.example)
 # ===============================
-*.spec
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
 
 # ===============================
-# Docker
+# Python (General)
 # ===============================
-.docker/
-docker-compose.override.yml
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 
 # ===============================
-# Frontend / Node
+# Backend (FastAPI / Python)
 # ===============================
-node_modules/
-dist/
-dist-ssr/
-*.local
-.cache/
-.vite/
-.parcel-cache/
-*.tsbuildinfo
-*.tsbuildinfo.local
-coverage/
-.nyc_output/
+backend/.venv/
+backend/venv/
+backend/env/
+backend/logs/
+backend/uploads/
+backend/*.db
+backend/*.sqlite3
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.mypy_cache/
 
-# Logs (Node)
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Editor / IDE (additional)
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# ===============================
+# Frontend (React / Vite / Node)
+# ===============================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.cache/
+frontend/.vite/
+frontend/coverage/
+frontend/*.tsbuildinfo
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/pnpm-debug.log*

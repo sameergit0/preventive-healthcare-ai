@@ -138,7 +138,7 @@ def get_profile(
 
     return ProfileGetResponse(
         message="Profile fetched successfully",
-        profile=profile  
+        profile=ProfileResponse.model_validate(profile)
     )
 
 @router.patch(
@@ -201,7 +201,7 @@ def update_profile(
             detail="Internal database error occurred"
         )
 
-    return existing_profile
+    return ProfileResponse.model_validate(existing_profile)
 
 @router.delete(
     "/", 

@@ -1,6 +1,7 @@
 from app.db import Base
 from sqlalchemy import Column, String, Integer, Float, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship
+from typing import Optional
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -11,8 +12,11 @@ class Profile(Base):
     full_name = Column(String(100), nullable=False)
     age = Column(Integer, nullable=False)
     gender = Column(String(1), nullable=False) 
+
     weight = Column(Float, nullable=False)
     height = Column(Float, nullable=False)
+    waist_cm = Column(Float, nullable=True)
+
     goal = Column(String(100), nullable=False)
     profile_image = Column(String(255), nullable=True)
     

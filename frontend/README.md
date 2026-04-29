@@ -139,9 +139,9 @@ VITE_API_BASE_URL=http://localhost:8000
 ## 🧩 Key Features
 
 - **JWT‑based authentication** – login, signup, protected routes
-- **Health metric tracking** – log weight, blood pressure, glucose, etc.
-- **Interactive dashboards** – charts & trends using Recharts
-- **Profile management** – upload photo, edit personal details
+- **Health metric tracking** – log steps, sleep, water, and food intake
+- **Interactive dashboards** – charts & trends with custom date range selection
+- **Profile management** – monitor BMI status and body composition (waist cm)
 - **Responsive design** – works on mobile & desktop
 - **Real‑time data** – TanStack Query for automatic refetching
 

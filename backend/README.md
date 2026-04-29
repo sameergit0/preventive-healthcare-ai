@@ -20,9 +20,9 @@ It follows a **modular, production-ready backend design** suitable for real-worl
 ## ✨ Key Features
 
 * 🔐 **JWT Authentication** – Secure login & user management
-* 📊 **Health Metrics Tracking** – Weight, BP, glucose, lifestyle data
-* 👤 **Profile Management** – User profiles with image upload
-* 📈 **Analytics Engine** – Trends, summaries, and health insights
+* 📊 **Health Metrics Tracking** – Steps, Sleep, Water, Food
+* 👤 **Profile Management** – BMI calculation, waist circumference tracking
+* 📈 **Analytics Engine** – Robust filtering (Today, Range, All), trends, and insights
 * 📂 **File Handling** – Profile image upload & static serving
 * 🔄 **Database Migrations** – Alembic-based schema versioning
 * ⚡ **Optimized APIs** – FastAPI async support

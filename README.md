@@ -8,10 +8,10 @@ A **full-stack AI-powered preventive healthcare platform** designed to track hea
 
 This project aims to build a **scalable healthcare system** that helps users:
 
-* 📊 Track daily health metrics (weight, BP, glucose, etc.)
-* 📈 Analyze trends over time
-* 🤖 Get AI-driven health insights (upcoming)
-* 🔐 Securely manage profiles and data
+* 📊 Track daily health metrics (steps, sleep, water, food, etc.)
+* 📈 Analyze trends over time with custom date ranges
+* ⚖️ Monitor BMI and body composition (waist circumference)
+* 🔐 Securely manage profiles and health data
 
 ---
 
@@ -87,8 +87,9 @@ Detailed frontend documentation: 👉 `frontend/README.md`
 
 * 🔐 Authentication (JWT-based)
 * 👤 User Profile Management
-* 📊 Health Metrics Logging
-* 📈 Analytics & Trends
+* 📊 Health Metrics Logging (Steps, Sleep, Water, Food)
+* 📈 Advanced Analytics & Trends (Custom Date Ranges)
+* ⚖️ BMI & Health Status Tracking
 * 📂 File Uploads (profile images)
 * 📝 Logging system
 

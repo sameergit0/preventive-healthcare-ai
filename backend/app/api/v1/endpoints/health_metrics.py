@@ -132,16 +132,16 @@ def get_health_logs(
         )
     
     # Handle "range" request type
-    if request_type == "range":
+    elif request_type == "range":
         if start_date is None or end_date is None:
-            logger.warning(f"Range request missing dates for user: {current_user.email}")
+            logger.warning(f"Missing dates for range request: user={current_user.email}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_400_BAD_REQUEST, 
                 detail="start_date and end_date are required when request_type='range'"
             )
         
         if start_date > end_date:
-            logger.warning(f"Invalid date range for user: {current_user.email} - {start_date} > {end_date}")
+            logger.warning(f"Invalid date range for user: {current_user.email}. start_date > end_date")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail="Start date cannot be after end date"
@@ -160,7 +160,7 @@ def get_health_logs(
             HealthMetric.log_date <= end_date
         ]
         
-        total_count = db.query(func.count(HealthMetric.id)).filter(*base_filter).scalar()
+        total_count = db.query(func.count(HealthMetric.id)).filter(*base_filter).scalar() or 0
         
         offset = (page - 1) * limit
         
@@ -179,17 +179,15 @@ def get_health_logs(
     
     # Handle "all" request type (default)
     else:
+        base_filter = [HealthMetric.user_id == current_user.id]
+        
+        total_count = db.query(func.count(HealthMetric.id)).filter(*base_filter).scalar() or 0
+        
         offset = (page - 1) * limit
         
-        logs = db.query(HealthMetric).filter(
-            HealthMetric.user_id == current_user.id
-        ).order_by(
+        logs = db.query(HealthMetric).filter(*base_filter).order_by(
             HealthMetric.log_date.desc()
         ).offset(offset).limit(limit).all()
-        
-        total_count = db.query(func.count(HealthMetric.id)).filter(
-            HealthMetric.user_id == current_user.id
-        ).scalar()
         
         logger.debug(f"Fetched {len(logs)} of {total_count} total logs for user: {current_user.email} (page {page})")
         

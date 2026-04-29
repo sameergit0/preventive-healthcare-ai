@@ -1,21 +1,26 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { format, subDays } from 'date-fns'
-import { Footprints, Moon, Droplet, ArrowRight, Sparkles } from 'lucide-react'
+import { Footprints, Moon, Droplet, ArrowRight, Sparkles, Plus, UtensilsCrossed } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 import { Card } from '@/components/ui/Card'
+import { Modal } from '@/components/ui/Modal'
 import { ProgressRing } from '@/components/ui/ProgressRing'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { useProfile } from '@/features/profile/api'
-import { useTodayLog } from '@/features/logs/api'
+import { useTodayLog, useUpsertTodayLog } from '@/features/logs/api'
+import { LogEntryForm, type LogField } from '@/features/logs/LogEntryForm'
 import { useRecommendations, useScoreHistory, useSummary } from '@/features/analytics/api'
-import { formatNumber } from '@/lib/utils'
+import { formatNumber, cn } from '@/lib/utils'
+import { type Profile } from '@/types/api'
 
 const TARGETS = { steps: 10000, sleep: 7.5, water: 2.7 }
 
 export function DashboardPage() {
+  const [quickLog, setQuickLog] = useState<LogField | null>(null)
   const { data: profile } = useProfile()
   const today = useTodayLog()
+  const upsert = useUpsertTodayLog()
   const end = format(new Date(), 'yyyy-MM-dd')
   const start7 = format(subDays(new Date(), 6), 'yyyy-MM-dd')
 
@@ -52,22 +57,49 @@ export function DashboardPage() {
           to="/log"
           className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-4 text-body-md font-semibold text-primary-on hover:bg-primary-container"
         >
-          Log today <ArrowRight className="h-4 w-4" />
+          Full log <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 
+      {/* Quick Log Buttons */}
+      <div className="flex flex-wrap gap-2">
+        <QuickLogButton
+          icon={<Footprints className="h-4 w-4" />}
+          label="Steps"
+          onClick={() => setQuickLog('steps')}
+          className="bg-secondary-fixed text-on-secondary-fixed-variant"
+        />
+        <QuickLogButton
+          icon={<Moon className="h-4 w-4" />}
+          label="Sleep"
+          onClick={() => setQuickLog('sleep')}
+          className="bg-primary-fixed text-on-primary-fixed-variant"
+        />
+        <QuickLogButton
+          icon={<Droplet className="h-4 w-4" />}
+          label="Water"
+          onClick={() => setQuickLog('water')}
+          className="bg-tertiary-fixed text-on-tertiary-fixed-variant"
+        />
+        <QuickLogButton
+          icon={<UtensilsCrossed className="h-4 w-4" />}
+          label="Food"
+          onClick={() => setQuickLog('food')}
+          className="bg-surface-container-high text-on-surface"
+        />
+      </div>
+
       {/* Top row */}
-      <div className="grid grid-cols-1 gap-md md:grid-cols-4">
-        <Card className="flex items-center gap-md md:col-span-1">
-          <ProgressRing value={todayScore ?? 0} size={96} stroke={10} fillClassName="text-primary">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-5">
+        <Card className="flex items-center gap-md">
+          <ProgressRing value={todayScore ?? 0} size={80} stroke={8} fillClassName="text-primary">
             <div className="text-center">
               <p className="text-headline-md text-on-surface">{todayScore ?? '—'}</p>
-              <p className="text-label-md text-on-surface-variant">today</p>
             </div>
           </ProgressRing>
           <div>
             <p className="text-label-lg uppercase text-on-surface-variant">Score</p>
-            <p className="text-body-md text-on-surface">Composite of steps, sleep, water</p>
+            <p className="text-body-sm text-on-surface-variant">Today's wellness</p>
           </div>
         </Card>
         <MetricCard
@@ -94,6 +126,7 @@ export function DashboardPage() {
           unit="L"
           formatValue={(v) => v.toFixed(1)}
         />
+        <HealthStatsCard profile={profile?.profile} />
       </div>
 
       <div className="grid grid-cols-1 gap-md lg:grid-cols-3">
@@ -145,7 +178,53 @@ export function DashboardPage() {
           )}
         </Card>
       </div>
+
+      <Modal
+        open={!!quickLog}
+        onClose={() => setQuickLog(null)}
+        title={quickLog ? `Log ${quickLog.charAt(0).toUpperCase() + quickLog.slice(1)}` : ''}
+        className="max-w-2xl"
+      >
+        {quickLog && (
+          <LogEntryForm
+            initial={log}
+            fields={[quickLog]}
+            onSubmit={async (body) => {
+              await upsert.mutateAsync(body)
+              setQuickLog(null)
+            }}
+            submitting={upsert.isPending}
+            submitLabel={`Save ${quickLog}`}
+          />
+        )}
+      </Modal>
     </div>
+  )
+}
+
+function QuickLogButton({
+  icon,
+  label,
+  onClick,
+  className,
+}: {
+  icon: React.ReactNode
+  label: string
+  onClick: () => void
+  className?: string
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-full px-4 py-2 text-label-lg transition-transform hover:scale-105 active:scale-95',
+        className
+      )}
+    >
+      <Plus className="h-4 w-4" />
+      {icon}
+      <span>{label}</span>
+    </button>
   )
 }
 
@@ -176,6 +255,25 @@ function MetricCard({
           {value === null ? '—' : formatValue(value)}{unit}
         </p>
         <p className="text-body-sm text-on-surface-variant">/ {formatValue(target)}{unit}</p>
+      </div>
+    </Card>
+  )
+}
+
+function HealthStatsCard({ profile }: { profile: Profile }) {
+  if (!profile?.bmi) return null
+  return (
+    <Card className="flex flex-col justify-center gap-1">
+      <p className="text-label-lg uppercase text-on-surface-variant">Health Profile</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-headline-md text-on-surface">{profile.bmi}</span>
+        <span className="text-body-sm text-on-surface-variant">BMI</span>
+      </div>
+      <div className={cn(
+        "text-label-md font-bold uppercase",
+        profile.bmi_category === 'Normal' ? "text-tertiary" : "text-error"
+      )}>
+        {profile.bmi_category}
       </div>
     </Card>
   )

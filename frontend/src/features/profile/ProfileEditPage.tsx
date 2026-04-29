@@ -11,10 +11,11 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Modal } from '@/components/ui/Modal'
 import { Avatar } from '@/components/ui/Avatar'
 import { useDeletePhoto, useDeleteProfile, useProfile, useUpdatePhoto, useUpdateProfile } from './api'
-import { GOALS, type Goal } from '@/types/api'
+import { GOALS, type Goal, type Profile } from '@/types/api'
 import { profileSchema, type ProfileForm } from '@/lib/validation'
 import { getErrorMessage } from '@/lib/api'
 import { useDropzone } from 'react-dropzone'
+import { cn } from '@/lib/utils'
 
 export function ProfileEditPage() {
   const navigate = useNavigate()
@@ -41,6 +42,7 @@ export function ProfileEditPage() {
         gender: data.profile.gender,
         weight: data.profile.weight,
         height: data.profile.height,
+        waist_cm: data.profile.waist_cm ?? '',
         goal: data.profile.goal,
       })
     }
@@ -61,13 +63,26 @@ export function ProfileEditPage() {
   })
 
   const onSubmit = handleSubmit(async (values) => {
-    const patch: any = {}
-    Object.keys(dirtyFields).forEach((k) => ((patch as any)[k] = (values as any)[k]))
+    // Build patch only from dirty fields to avoid sending unchanged data
+    const patch: Record<string, unknown> = {}
+    const allowedFields: (keyof ProfileForm)[] = ['full_name', 'age', 'gender', 'weight', 'height', 'waist_cm', 'goal']
+
+    Object.keys(dirtyFields).forEach((k) => {
+      const key = k as keyof ProfileForm
+      if (!allowedFields.includes(key)) return
+
+      const val = values[key]
+      patch[key] = val === '' ? null : val
+    })
+
     if (Object.keys(patch).length === 0) return
+
     try {
-      await update.mutateAsync(patch)
+      // Cast to the expected mutation type since we've manually verified the fields
+      await update.mutateAsync(patch as Partial<Profile>)
       toast.success('Profile updated')
     } catch (e) {
+      console.error('Profile update failed:', e)
       toast.error(getErrorMessage(e))
     }
   })
@@ -123,6 +138,29 @@ export function ProfileEditPage() {
               )}
             </div>
           </div>
+          {data.profile.bmi && (
+            <div className="mt-4 flex flex-wrap gap-md border-t border-surface-variant pt-4">
+              <div className="flex flex-col">
+                <span className="text-label-sm uppercase text-on-surface-variant">Current BMI</span>
+                <span className="text-headline-md text-on-surface">{data.profile.bmi}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-label-sm uppercase text-on-surface-variant">Category</span>
+                <span className={cn(
+                  "text-headline-md",
+                  data.profile.bmi_category === 'Normal' ? "text-primary" : "text-error"
+                )}>
+                  {data.profile.bmi_category}
+                </span>
+              </div>
+              {data.profile.waist_cm && (
+                <div className="flex flex-col">
+                  <span className="text-label-sm uppercase text-on-surface-variant">Waist</span>
+                  <span className="text-headline-md text-on-surface">{data.profile.waist_cm} cm</span>
+                </div>
+              )}
+            </div>
+          )}
         </Card>
         <Card className="flex flex-col gap-md">
           <Input label="Full name" error={errors.full_name?.message} {...register('full_name')} />
@@ -146,6 +184,7 @@ export function ProfileEditPage() {
             <Input label="Weight (kg)" type="number" step="0.1" error={errors.weight?.message} {...register('weight')} />
             <Input label="Height (cm)" type="number" step="0.1" error={errors.height?.message} {...register('height')} />
           </div>
+          <Input label="Waist (cm) - Optional" type="number" step="0.1" error={errors.waist_cm?.message} {...register('waist_cm')} />
           <Controller
             control={control}
             name="goal"

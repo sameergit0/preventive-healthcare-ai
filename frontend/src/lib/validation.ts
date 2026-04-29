@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { GOALS } from '@/types/api'
 
 const passwordRegex =
-  /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]).{8,64}$/
+  /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=[\]{}|;:,.<>?]).{8,64}$/
 
 export const passwordSchema = z
   .string()
@@ -34,6 +34,7 @@ export const profileSchema = z.object({
   gender: z.enum(['M', 'F']),
   weight: z.coerce.number().min(30.01, 'Weight must be > 30').max(299.99, 'Weight must be < 300'),
   height: z.coerce.number().min(50.01, 'Height must be > 50').max(249.99, 'Height must be < 250'),
+  waist_cm: z.coerce.number().min(30.01, 'Min 30cm').max(199.99, 'Max 200cm').optional().nullable().or(z.literal('')),
   goal: z.enum(GOALS as [string, ...string[]]),
 })
 
