@@ -2,6 +2,8 @@
 
 A modern React-based frontend for the Preventive Healthcare AI platform. Provides an intuitive interface for users to track health metrics, view analytics, and manage their profiles.
 
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -9,14 +11,37 @@ A modern React-based frontend for the Preventive Healthcare AI platform. Provide
 - Node.js 18+ and npm/yarn/pnpm
 - Backend server running (see [backend README](../backend/README.md))
 
-### Installation
+---
+
+### 1. Installation
 
 ```bash
 cd frontend
-npm install   # or pnpm install / yarn install
+npm install   
 ```
 
-### Development
+---
+
+### 2. Configure Environment
+
+```bash
+cp .env.example .env
+```
+
+---
+
+Example:
+
+```env
+# ===============================
+# Base URL
+# ===============================
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+---
+
+### 3. Development
 
 Start the development server:
 
@@ -26,7 +51,9 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### Build for Production
+---
+
+### 4. Build for Production
 
 ```bash
 npm run build
@@ -37,6 +64,8 @@ Preview the production build:
 ```bash
 npm run preview
 ```
+
+---
 
 ## 🛠️ Tech Stack
 
@@ -52,6 +81,8 @@ npm run preview
 - **Lucide React** – icon library
 - **Sonner** – toast notifications
 - **Axios** – HTTP client
+
+---
 
 ## 📁 Project Structure
 
@@ -78,17 +109,23 @@ frontend/
 └── package.json
 ```
 
+---
+
 ## 🔌 API Integration
 
 The frontend communicates with the FastAPI backend. The base URL is configured in `src/lib/api.ts`. By default it points to `http://localhost:8000/api/v1`.
 
+---
+
 ### Environment Variables
 
-Create a `.env` file in the frontend root to override:
+Create a `.env` or `cp .env.example .env` file in the frontend root to override: 
 
 ```env
 VITE_API_BASE_URL=http://localhost:8000
 ```
+
+---
 
 ## 🧪 Available Scripts
 
@@ -96,6 +133,8 @@ VITE_API_BASE_URL=http://localhost:8000
 - `npm run build` – build for production
 - `npm run lint` – run ESLint
 - `npm run preview` – locally preview production build
+
+---
 
 ## 🧩 Key Features
 
@@ -106,12 +145,16 @@ VITE_API_BASE_URL=http://localhost:8000
 - **Responsive design** – works on mobile & desktop
 - **Real‑time data** – TanStack Query for automatic refetching
 
+---
+
 ## 📚 Learn More
 
 - [React Documentation](https://react.dev)
 - [Vite Documentation](https://vitejs.dev)
 - [Tailwind CSS](https://tailwindcss.com)
 - [TanStack Query](https://tanstack.com/query/latest)
+
+---
 
 ## 🚧 Future Enhancements
 
