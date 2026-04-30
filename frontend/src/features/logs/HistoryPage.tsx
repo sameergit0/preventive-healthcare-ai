@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Footprints, Moon, Droplet, UtensilsCrossed, Trash2, Pencil, Calendar } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Footprints, Moon, Droplet, UtensilsCrossed, Trash2, Pencil, Calendar, Clock, Timer, Apple, Candy } from 'lucide-react'
 import { format, subDays } from 'date-fns'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/Card'
@@ -107,6 +107,8 @@ export function HistoryPage() {
               <Metric icon={<Moon className="h-4 w-4" />} value={log.sleep_hours !== null ? `${log.sleep_hours}h` : '—'} label="sleep" />
               <Metric icon={<Droplet className="h-4 w-4" />} value={log.water_intake !== null ? `${log.water_intake}L` : '—'} label="water" />
               <Metric icon={<UtensilsCrossed className="h-4 w-4" />} value={`${log.food_log?.length ?? 0}`} label="meals" />
+              <Metric icon={<Clock className="h-4 w-4" />} value={log.activity_minutes !== null ? `${log.activity_minutes}m` : '—'} label="active" />
+              <Metric icon={<Candy className="h-4 w-4" />} value={log.nutrition_sugar !== null ? `${log.nutrition_sugar}g` : '—'} label="sugar" />
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => setEditing(log)}><Pencil className="h-4 w-4" /></Button>

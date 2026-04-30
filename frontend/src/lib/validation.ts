@@ -56,13 +56,23 @@ export const dailyLogSchema = z
         }),
       )
       .optional(),
+    sleep_quality: z.enum(['poor', 'average', 'good', 'excellent']).optional(),
+    activity_minutes: z.coerce.number().int().min(0).max(1440).optional(),
+    sedentary_minutes: z.coerce.number().int().min(0).max(1440).optional(),
+    nutrition_sugar: z.coerce.number().min(0).max(500).optional(),
+    nutrition_fruits: z.coerce.number().int().min(0).max(20).optional(),
   })
   .refine(
     (v) =>
       v.steps !== undefined ||
       v.sleep_hours !== undefined ||
       v.water_intake !== undefined ||
-      (v.food_log && v.food_log.length > 0),
+      (v.food_log && v.food_log.length > 0) ||
+      v.sleep_quality !== undefined ||
+      v.activity_minutes !== undefined ||
+      v.sedentary_minutes !== undefined ||
+      v.nutrition_sugar !== undefined ||
+      v.nutrition_fruits !== undefined,
     { message: 'Provide at least one metric' },
   )
 

@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Footprints, Moon, Droplet, UtensilsCrossed, Plus, X } from 'lucide-react'
+import { Footprints, Moon, Droplet, UtensilsCrossed, Plus, X, Clock, Timer, Apple, Candy, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import type { DailyHealthLog, DailyHealthLogCreate, FoodItem, Meal } from '@/types/api'
 import { getErrorMessage } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { Stepper } from '@/components/ui/Stepper'
+import { Chip } from '@/components/ui/Chip'
 
 const MEALS: Meal[] = ['breakfast', 'lunch', 'dinner']
-export type LogField = 'steps' | 'sleep' | 'water' | 'food'
+export type LogField = 'steps' | 'sleep' | 'water' | 'food' | 'activity' | 'sedentary' | 'sugar' | 'fruits'
 
 interface LogEntryFormProps {
   initial?: DailyHealthLog | null
@@ -21,7 +24,12 @@ interface LogEntryFormProps {
 export function LogEntryForm({ initial, onSubmit, submitting, submitLabel = 'Save log', fields }: LogEntryFormProps) {
   const [steps, setSteps] = useState<string>('')
   const [sleep, setSleep] = useState<string>('')
+  const [sleepQuality, setSleepQuality] = useState<DailyHealthLog['sleep_quality']>(null)
   const [water, setWater] = useState<string>('')
+  const [activity, setActivity] = useState<number>(0)
+  const [sedentary, setSedentary] = useState<number>(0)
+  const [sugar, setSugar] = useState<number | null>(null)
+  const [fruits, setFruits] = useState<number>(0)
   const [food, setFood] = useState<Record<Meal, string[]>>({ breakfast: [], lunch: [], dinner: [] })
   const [drafts, setDrafts] = useState<Record<Meal, string>>({ breakfast: '', lunch: '', dinner: '' })
 
@@ -29,7 +37,12 @@ export function LogEntryForm({ initial, onSubmit, submitting, submitLabel = 'Sav
     if (!initial) return
     setSteps(initial.steps?.toString() ?? '')
     setSleep(initial.sleep_hours?.toString() ?? '')
+    setSleepQuality(initial.sleep_quality ?? null)
     setWater(initial.water_intake?.toString() ?? '')
+    setActivity(initial.activity_minutes ?? 0)
+    setSedentary(initial.sedentary_minutes ?? 0)
+    setSugar(initial.nutrition_sugar ?? 0)
+    setFruits(initial.nutrition_fruits ?? 0)
     const next: Record<Meal, string[]> = { breakfast: [], lunch: [], dinner: [] }
     initial.food_log?.forEach((f) => {
       next[f.meal] = [...f.items]
@@ -58,7 +71,12 @@ export function LogEntryForm({ initial, onSubmit, submitting, submitLabel = 'Sav
     const body: DailyHealthLogCreate = {}
     if (steps !== '') body.steps = Number(steps)
     if (sleep !== '') body.sleep_hours = Number(sleep)
+    if (sleepQuality) body.sleep_quality = sleepQuality
     if (water !== '') body.water_intake = Number(water)
+    if (activity > 0) body.activity_minutes = activity
+    if (sedentary > 0) body.sedentary_minutes = sedentary
+    if (sugar > 0) body.nutrition_sugar = sugar
+    if (fruits > 0) body.nutrition_fruits = fruits
     const food_log: FoodItem[] = MEALS.filter((m) => food[m].length > 0).map((m) => ({ meal: m, items: food[m] }))
     if (food_log.length > 0) body.food_log = food_log
 
@@ -131,6 +149,27 @@ export function LogEntryForm({ initial, onSubmit, submitting, submitLabel = 'Sav
               className="h-2 w-full sm:w-48 accent-primary"
             />
           </div>
+          <div className="mt-4">
+            <p className="mb-2 text-label-lg text-on-surface-variant">Quality</p>
+            <div className="flex flex-wrap gap-2">
+              {(['poor', 'average', 'good', 'excellent'] as const).map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => setSleepQuality(q === sleepQuality ? null : q)}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-body-sm transition-colors',
+                    sleepQuality === q
+                      ? 'border-primary bg-primary text-primary-on'
+                      : 'border-outline text-on-surface-variant hover:bg-surface-container-high'
+                  )}
+                >
+                  {sleepQuality === q && <CheckCircle2 className="h-3.5 w-3.5" />}
+                  <span className="capitalize">{q}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </Card>
       )}
 
@@ -159,6 +198,93 @@ export function LogEntryForm({ initial, onSubmit, submitting, submitLabel = 'Sav
           </div>
         </Card>
       )}
+
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
+        {(!fields || fields.includes('activity')) && (
+          <Card className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary-fixed text-on-secondary-fixed">
+                <Clock className="h-5 w-5" />
+              </div>
+              <h3 className="text-title-md text-on-surface">Active mins</h3>
+            </div>
+            <Stepper 
+              value={Number(activity) || 0} 
+              onChange={setActivity} 
+              step={5} 
+              unit="minutes" 
+              max={1440} 
+            />
+          </Card>
+        )}
+        {(!fields || fields.includes('sedentary')) && (
+          <Card className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-container-highest text-on-surface">
+                <Timer className="h-5 w-5" />
+              </div>
+              <h3 className="text-title-md text-on-surface">Sedentary mins</h3>
+            </div>
+            <Stepper 
+              value={Number(sedentary) || 0} 
+              onChange={setSedentary} 
+              step={15} 
+              unit="minutes" 
+              max={1440} 
+            />
+          </Card>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
+        {(!fields || fields.includes('sugar')) && (
+          <Card className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-error-container text-on-error-container">
+                <Candy className="h-5 w-5" />
+              </div>
+              <h3 className="text-title-md text-on-surface">Sugar (grams)</h3>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {[0, 5, 10, 25, 50].map(val => (
+                <Chip 
+                  key={val} 
+                  selected={sugar === val} 
+                  onClick={() => setSugar(val)}
+                  className="px-4"
+                >
+                  {val}g
+                </Chip>
+              ))}
+              <div className="w-24">
+                <input 
+                  type="number" 
+                  value={sugar ?? ''} 
+                  onChange={(e) => setSugar(e.target.value === '' ? null : Number(e.target.value))} 
+                  placeholder="Custom"
+                  className="h-10 w-full rounded-lg bg-surface-container-low px-2 text-center text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:ring-2 focus:ring-primary outline-none transition-shadow"
+                />
+              </div>
+            </div>
+          </Card>
+        )}
+        {(!fields || fields.includes('fruits')) && (
+          <Card className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tertiary-container text-on-tertiary-container">
+                <Apple className="h-5 w-5" />
+              </div>
+              <h3 className="text-title-md text-on-surface">Fruits (count)</h3>
+            </div>
+            <Stepper 
+              value={Number(fruits) || 0} 
+              onChange={setFruits} 
+              step={1} 
+              max={20} 
+            />
+          </Card>
+        )}
+      </div>
 
       {(!fields || fields.includes('food')) && (
         <Card>

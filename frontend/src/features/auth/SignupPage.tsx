@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Select } from '@/components/ui/Select'
 import { useLogin, useSignup, useTimezones } from './api'
 import { signupSchema, type SignupForm } from '@/lib/validation'
+import type { SignupRequest } from '@/types/api'
 import { getErrorMessage } from '@/lib/api'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -50,7 +51,7 @@ export function SignupPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await signup.mutateAsync(values)
+      await signup.mutateAsync(values as SignupRequest)
       await login.mutateAsync({ email: values.email, password: values.password })
       navigate('/profile/create', { replace: true })
     } catch (e) {
@@ -60,8 +61,11 @@ export function SignupPage() {
 
   const tzOptions = useMemo(() => {
     const grouped = tzQuery.data?.grouped ?? {}
-    return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b))
+    const entries = Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b))
+    return entries
   }, [tzQuery.data])
+
+  const isLoadingTz = tzQuery.isLoading
 
   return (
     <div className="flex flex-1 flex-col gap-md">
@@ -103,16 +107,25 @@ export function SignupPage() {
             ))}
           </ul>
         </div>
-        <Select label="Timezone" error={errors.timezone?.message} {...register('timezone')}>
-          {tzOptions.map(([region, zones]) => (
-            <optgroup key={region} label={region}>
-              {zones.map((z) => (
-                <option key={z} value={z}>
-                  {z}
-                </option>
-              ))}
-            </optgroup>
-          ))}
+        <Select 
+          label="Timezone" 
+          error={errors.timezone?.message} 
+          disabled={isLoadingTz}
+          {...register('timezone')}
+        >
+          {isLoadingTz ? (
+            <option>Loading timezones...</option>
+          ) : (
+            tzOptions.map(([region, zones]) => (
+              <optgroup key={region} label={region}>
+                {zones.map((z) => (
+                  <option key={z} value={z}>
+                    {z}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          )}
         </Select>
         <Button type="submit" size="lg" loading={signup.isPending || login.isPending}>
           Sign up

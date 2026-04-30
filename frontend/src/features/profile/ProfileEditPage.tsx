@@ -99,7 +99,7 @@ export function ProfileEditPage() {
   const onDeleteProfile = async () => {
     try {
       await deleteProfile.mutateAsync()
-      toast.success('Profile deleted')
+      toast.success('Profile deleted. You can now create a new one.')
       navigate('/profile/create', { replace: true })
     } catch (e) {
       toast.error(getErrorMessage(e))

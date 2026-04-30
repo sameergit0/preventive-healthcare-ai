@@ -80,6 +80,11 @@ export interface DailyHealthLog {
   sleep_hours: number | null
   water_intake: number | null
   food_log: FoodItem[]
+  sleep_quality: 'poor' | 'average' | 'good' | 'excellent' | null
+  activity_minutes: number | null
+  sedentary_minutes: number | null
+  nutrition_sugar: number | null
+  nutrition_fruits: number | null
   created_at: string
 }
 
@@ -88,6 +93,11 @@ export interface DailyHealthLogCreate {
   sleep_hours?: number
   water_intake?: number
   food_log?: FoodItem[]
+  sleep_quality?: 'poor' | 'average' | 'good' | 'excellent'
+  activity_minutes?: number
+  sedentary_minutes?: number
+  nutrition_sugar?: number
+  nutrition_fruits?: number
 }
 
 export interface AllLogsResponse {
@@ -115,9 +125,13 @@ export interface HealthSummaryResponse {
   steps: MetricSummary
   sleep: MetricSummary
   water: MetricSummary
+  activity: MetricSummary
+  sedentary: MetricSummary
+  sugar: MetricSummary
+  fruits: MetricSummary
 }
 
-export type MetricType = 'steps' | 'sleep' | 'water'
+export type MetricType = 'steps' | 'sleep' | 'water' | 'activity' | 'sedentary' | 'sugar' | 'fruits'
 export type Severity = 'good' | 'warning' | 'critical'
 export type Priority = 'high' | 'medium' | 'low'
 
@@ -142,6 +156,10 @@ export interface HealthTrendsResponse {
   steps: MetricTrend
   sleep: MetricTrend
   water: MetricTrend
+  activity: MetricTrend
+  sedentary: MetricTrend
+  sugar: MetricTrend
+  fruits: MetricTrend
 }
 
 export interface Recommendation {

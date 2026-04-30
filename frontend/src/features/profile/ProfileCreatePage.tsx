@@ -1,8 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -10,14 +10,21 @@ import { Button } from '@/components/ui/Button'
 import { Chip } from '@/components/ui/Chip'
 import { GOALS, type Goal } from '@/types/api'
 import { profileSchema, type ProfileForm } from '@/lib/validation'
-import { useCreateProfile } from './api'
+import { useCreateProfile, useProfile } from './api'
 import { PhotoPicker } from './PhotoPicker'
 import { getErrorMessage } from '@/lib/api'
 
 export function ProfileCreatePage() {
   const navigate = useNavigate()
+  const { data: profileData, isLoading: profileLoading } = useProfile()
   const create = useCreateProfile()
   const [file, setFile] = useState<File | null>(null)
+
+  useEffect(() => {
+    if (!profileLoading && profileData?.profile) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [profileData, profileLoading, navigate])
 
   const {
     register,
@@ -38,7 +45,7 @@ export function ProfileCreatePage() {
       })
       if (file) fd.append('file', file)
       await create.mutateAsync(fd)
-      toast.success('Profile created')
+      toast.success('Profile created! Welcome to Vitality.')
       navigate('/dashboard', { replace: true })
     } catch (e: unknown) {
       if (axios.isAxiosError(e) && e.response?.status === 409) {

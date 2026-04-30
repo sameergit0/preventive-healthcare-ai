@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { format, subDays } from 'date-fns'
-import { Footprints, Moon, Droplet, ArrowRight, Sparkles, Plus, UtensilsCrossed } from 'lucide-react'
+import { Footprints, Moon, Droplet, ArrowRight, Sparkles, Plus, UtensilsCrossed, Clock, Candy, Apple } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { Modal } from '@/components/ui/Modal'
@@ -14,7 +14,7 @@ import { useRecommendations, useScoreHistory, useSummary } from '@/features/anal
 import { formatNumber, cn } from '@/lib/utils'
 import { type Profile } from '@/types/api'
 
-const TARGETS = { steps: 10000, sleep: 7.5, water: 2.7 }
+const TARGETS = { steps: 10000, sleep: 7.5, water: 2.7, activity: 30 }
 
 export function DashboardPage() {
   const [quickLog, setQuickLog] = useState<LogField | null>(null)
@@ -87,19 +87,37 @@ export function DashboardPage() {
           onClick={() => setQuickLog('food')}
           className="bg-surface-container-high text-on-surface"
         />
+        <QuickLogButton
+          icon={<Clock className="h-4 w-4" />}
+          label="Activity"
+          onClick={() => setQuickLog('activity')}
+          className="bg-secondary-fixed-dim text-on-secondary-fixed"
+        />
+        <QuickLogButton
+          icon={<Candy className="h-4 w-4" />}
+          label="Sugar"
+          onClick={() => setQuickLog('sugar')}
+          className="bg-error-container text-on-error-container"
+        />
+        <QuickLogButton
+          icon={<Apple className="h-4 w-4" />}
+          label="Fruits"
+          onClick={() => setQuickLog('fruits')}
+          className="bg-tertiary-container text-on-tertiary-container"
+        />
       </div>
 
       {/* Top row */}
-      <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-5">
-        <Card className="flex items-center gap-md">
-          <ProgressRing value={todayScore ?? 0} size={80} stroke={8} fillClassName="text-primary">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+        <Card className="flex flex-col items-center gap-2 p-3 text-center">
+          <ProgressRing value={todayScore ?? 0} size={64} stroke={6} fillClassName="text-primary">
             <div className="text-center">
-              <p className="text-headline-md text-on-surface">{todayScore ?? '—'}</p>
+              <p className="text-title-lg font-bold text-on-surface">{todayScore ?? '—'}</p>
             </div>
           </ProgressRing>
-          <div>
-            <p className="text-label-lg uppercase text-on-surface-variant">Score</p>
-            <p className="text-body-sm text-on-surface-variant">Today's wellness</p>
+          <div className="min-w-0">
+            <p className="text-label-sm uppercase tracking-wider text-on-surface-variant">Score</p>
+            <p className="text-body-xs text-on-surface-variant">Today's wellness</p>
           </div>
         </Card>
         <MetricCard
@@ -125,6 +143,14 @@ export function DashboardPage() {
           target={TARGETS.water}
           unit="L"
           formatValue={(v) => v.toFixed(1)}
+        />
+        <MetricCard
+          icon={<Clock className="h-5 w-5" />}
+          label="Activity"
+          value={log?.activity_minutes ?? null}
+          target={TARGETS.activity}
+          unit="m"
+          formatValue={(v) => v.toFixed(0)}
         />
         <HealthStatsCard profile={profile?.profile} />
       </div>
@@ -245,16 +271,16 @@ function MetricCard({
 }) {
   const pct = value === null ? 0 : Math.min(100, (value / target) * 100)
   return (
-    <Card className="flex items-center gap-md">
-      <ProgressRing value={pct} size={72} stroke={8}>
+    <Card className="flex flex-col items-center gap-2 p-3 text-center min-w-0">
+      <ProgressRing value={pct} size={56} stroke={6}>
         <div className="text-on-surface-variant">{icon}</div>
       </ProgressRing>
-      <div>
-        <p className="text-label-lg uppercase text-on-surface-variant">{label}</p>
-        <p className="text-headline-md text-on-surface">
+      <div className="min-w-0">
+        <p className="text-label-sm uppercase tracking-wider text-on-surface-variant">{label}</p>
+        <p className="text-title-md font-bold text-on-surface">
           {value === null ? '—' : formatValue(value)}{unit}
         </p>
-        <p className="text-body-sm text-on-surface-variant">/ {formatValue(target)}{unit}</p>
+        <p className="text-body-xs text-on-surface-variant">/ {formatValue(target)}{unit}</p>
       </div>
     </Card>
   )
@@ -263,14 +289,14 @@ function MetricCard({
 function HealthStatsCard({ profile }: { profile: Profile }) {
   if (!profile?.bmi) return null
   return (
-    <Card className="flex flex-col justify-center gap-1">
-      <p className="text-label-lg uppercase text-on-surface-variant">Health Profile</p>
-      <div className="flex items-baseline gap-2">
-        <span className="text-headline-md text-on-surface">{profile.bmi}</span>
-        <span className="text-body-sm text-on-surface-variant">BMI</span>
+    <Card className="flex flex-col items-center justify-center gap-2 p-3 text-center min-w-0">
+      <p className="text-label-sm uppercase tracking-wider text-on-surface-variant">Profile</p>
+      <div className="flex items-baseline gap-1">
+        <span className="text-title-lg font-bold text-on-surface">{profile.bmi}</span>
+        <span className="text-body-xs text-on-surface-variant uppercase">BMI</span>
       </div>
       <div className={cn(
-        "text-label-md font-bold uppercase",
+        "text-label-xs font-bold uppercase px-2 py-0.5 rounded-full bg-surface-container-high",
         profile.bmi_category === 'Normal' ? "text-tertiary" : "text-error"
       )}>
         {profile.bmi_category}

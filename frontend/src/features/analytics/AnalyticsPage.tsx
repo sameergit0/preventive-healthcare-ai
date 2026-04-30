@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format, subDays } from 'date-fns'
-import { Footprints, Moon, Droplet, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react'
+import { Footprints, Moon, Droplet, TrendingUp, TrendingDown, Minus, Calendar, Clock, Timer, Apple, Candy } from 'lucide-react'
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
@@ -34,6 +34,10 @@ const metricIcon: Record<MetricType, React.ReactNode> = {
   steps: <Footprints className="h-5 w-5" />,
   sleep: <Moon className="h-5 w-5" />,
   water: <Droplet className="h-5 w-5" />,
+  activity: <Clock className="h-5 w-5" />,
+  sedentary: <Timer className="h-5 w-5" />,
+  sugar: <Candy className="h-5 w-5" />,
+  fruits: <Apple className="h-5 w-5" />,
 }
 
 export function AnalyticsPage() {
@@ -110,8 +114,8 @@ export function AnalyticsPage() {
             </ProgressRing>
           )}
           <div>
-            <p className="text-label-lg uppercase text-on-surface-variant">Health score</p>
-            <p className="text-body-md text-on-surface">Weighted average across steps, sleep and water.</p>
+            <h2 className="text-headline-md font-bold text-on-surface">Health score</h2>
+            <p className="text-body-sm text-on-surface-variant">Weighted average across all tracked health metrics.</p>
           </div>
         </div>
         {summary.data && (
@@ -155,27 +159,53 @@ export function AnalyticsPage() {
       </Card>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-md md:grid-cols-2 lg:grid-cols-4">
         {summary.isLoading
-          ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48" />)
+          ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-48" />)
           : summary.data && (
               <>
                 <SummaryCard type="steps" data={summary.data.steps} valueFmt={(v) => formatNumber(v)} unit="" />
                 <SummaryCard type="sleep" data={summary.data.sleep} valueFmt={(v) => v.toFixed(1)} unit="h" />
                 <SummaryCard type="water" data={summary.data.water} valueFmt={(v) => v.toFixed(1)} unit="L" />
+                <SummaryCard type="activity" data={summary.data.activity} valueFmt={(v) => v.toFixed(0)} unit="m" />
+              </>
+            )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+        {summary.isLoading
+          ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-48" />)
+          : summary.data && (
+              <>
+                <SummaryCard type="sedentary" data={summary.data.sedentary} valueFmt={(v) => v.toFixed(0)} unit="m" />
+                <SummaryCard type="sugar" data={summary.data.sugar} valueFmt={(v) => v.toFixed(1)} unit="g" />
+                <SummaryCard type="fruits" data={summary.data.fruits} valueFmt={(v) => v.toFixed(0)} unit="" />
               </>
             )}
       </div>
 
       {/* Trends */}
-      <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-md md:grid-cols-2 lg:grid-cols-4">
         {trends.isLoading
-          ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32" />)
+          ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)
           : trends.data && (
               <>
                 <TrendCard type="steps" data={trends.data.steps} fmt={(v) => formatNumber(v)} unit="" />
                 <TrendCard type="sleep" data={trends.data.sleep} fmt={(v) => v.toFixed(1)} unit="h" />
                 <TrendCard type="water" data={trends.data.water} fmt={(v) => v.toFixed(1)} unit="L" />
+                <TrendCard type="activity" data={trends.data.activity} fmt={(v) => v.toFixed(0)} unit="m" />
+              </>
+            )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-md md:grid-cols-3">
+        {trends.isLoading
+          ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32" />)
+          : trends.data && (
+              <>
+                <TrendCard type="sedentary" data={trends.data.sedentary} fmt={(v) => v.toFixed(0)} unit="m" />
+                <TrendCard type="sugar" data={trends.data.sugar} fmt={(v) => v.toFixed(1)} unit="g" />
+                <TrendCard type="fruits" data={trends.data.fruits} fmt={(v) => v.toFixed(0)} unit="" />
               </>
             )}
       </div>
