@@ -4,9 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.api.deps import get_db
 from app.models import User, Profile
-from app.core import get_current_user
+from app.core import get_current_user, IMAGE_EXT_MAP
 from typing import Optional
-import logging
 import os
 import shutil
 from dotenv import load_dotenv
@@ -16,15 +15,13 @@ load_dotenv()
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
-ext_map = {
-    "image/jpeg": "jpg",
-    "image/png": "png"
-}
+
+from app.utils import get_logger
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @router.post(
@@ -61,14 +58,14 @@ def create_profile(
         
     image_url = None
     if file:
-        if file.content_type not in ext_map.keys():
+        if file.content_type not in IMAGE_EXT_MAP.keys():
             logger.warning(f"Invalid file type attempted: {file.content_type} by user: {current_user.email}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Only {', '.join(ext_map.keys())} images are allowed"
+                detail=f"Only {', '.join(IMAGE_EXT_MAP.keys())} images are allowed"
             )
 
-        ext = ext_map[file.content_type]
+        ext = IMAGE_EXT_MAP[file.content_type]
         filename = f"profile_{current_user.id}.{ext}"
         file_path = os.path.join(UPLOAD_DIR, filename)
         
@@ -138,7 +135,7 @@ def get_profile(
 
     return ProfileGetResponse(
         message="Profile fetched successfully",
-        profile=ProfileResponse.model_validate(profile)
+        profile=profile
     )
 
 @router.patch(
@@ -201,7 +198,7 @@ def update_profile(
             detail="Internal database error occurred"
         )
 
-    return ProfileResponse.model_validate(existing_profile)
+    return existing_profile
 
 @router.delete(
     "/", 
@@ -279,14 +276,14 @@ def upload_profile_photo(
             detail="Profile not found. Please create a profile first"
         )
 
-    if file.content_type not in ext_map.keys():
+    if file.content_type not in IMAGE_EXT_MAP.keys():
         logger.warning(f"Invalid file type attempted by user: {current_user.email} - {file.content_type}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Only {', '.join(ext_map.keys())} images are allowed"
+            detail=f"Only {', '.join(IMAGE_EXT_MAP.keys())} images are allowed"
         )
     
-    ext = ext_map[file.content_type]
+    ext = IMAGE_EXT_MAP[file.content_type]
     filename = f"profile_{current_user.id}.{ext}"
     file_path = os.path.join(UPLOAD_DIR, filename)
     

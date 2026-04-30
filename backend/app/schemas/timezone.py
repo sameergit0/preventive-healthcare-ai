@@ -4,9 +4,9 @@ from typing import Dict, List
 class TimezonesResponse(BaseModel):
     grouped: Dict[str, List[str]]
     
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
-    
     model_config = ConfigDict(
+        from_attributes=True, 
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "grouped": {

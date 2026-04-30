@@ -7,12 +7,11 @@ from app.api.deps import get_db
 from app.models import User, HealthMetric
 from app.core import get_current_user
 from datetime import date
-from app.utils import get_user_today
-from typing import Optional, Literal
-import logging
+from app.utils import get_user_today, get_logger
+from typing import Literal, Optional
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.post(
     "/daily-logs", 
@@ -42,13 +41,7 @@ def create_or_update_daily_log(
             update_data = data.model_dump(exclude_unset=True)
 
             for key, value in update_data.items():
-                if key == "food_log":
-                    existing_log.food_log = [
-                        item.model_dump() if hasattr(item, "model_dump") else item 
-                        for item in value
-                    ] if value is not None else []
-                else:
-                    setattr(existing_log, key, value)
+                setattr(existing_log, key, value)
 
             db.commit()
             db.refresh(existing_log)
@@ -61,13 +54,7 @@ def create_or_update_daily_log(
             new_log = HealthMetric(
                 user_id=current_user.id,
                 log_date=today,
-                steps=data.steps,
-                sleep_hours=data.sleep_hours,
-                water_intake=data.water_intake,
-                food_log=(
-                    [item.model_dump() for item in data.food_log]
-                    if data.food_log is not None else []
-                )
+                **data.model_dump()
             )
 
             db.add(new_log)
@@ -238,17 +225,10 @@ def update_or_clear_metrics(
     updated_fields = []
 
     for key, value in update_data.items():
-        if key == "food_log":
-            log.food_log = [
-                item.model_dump() if hasattr(item, "model_dump") else item 
-                for item in value
-            ] if value is not None else []
-            updated_fields.append(key)
-            logger.debug(f"Updated {key} for log {log_id}")
-        else:
-            setattr(log, key, value)
-            updated_fields.append(key)
-            logger.debug(f"Updated {key}={value} for log {log_id}")
+        setattr(log, key, value)
+        logger.debug(f"Updated {key}={value} for log {log_id}")
+
+        updated_fields.append(key)
 
     try:
         db.commit()
@@ -264,7 +244,7 @@ def update_or_clear_metrics(
             detail="Database error occurred while updating the log. Please try again."
         )
 
-    return log  
+    return log
 
 @router.delete(
     "/daily-logs/today", 

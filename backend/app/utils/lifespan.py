@@ -1,9 +1,10 @@
-import logging
 import os
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from .logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

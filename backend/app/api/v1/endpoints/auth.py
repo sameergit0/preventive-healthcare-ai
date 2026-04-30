@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from app.api.deps import get_db
 from app.models import User
 from app.core import hash_password, verify_password, create_access_token, get_current_user
-import logging
+from app.utils import get_logger
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.post(
     "/signup", 
@@ -39,9 +39,8 @@ def signup(
     try:
         hashed_password = hash_password(plain_password=user.password)
         new_user = User(
-            email=user.email.lower(),  
-            hash_password=hashed_password, 
-            timezone=user.timezone
+            **user.model_dump(exclude={"password"}),
+            hash_password=hashed_password
         )
         
         db.add(new_user)

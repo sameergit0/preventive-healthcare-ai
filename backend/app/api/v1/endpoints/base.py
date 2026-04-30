@@ -6,10 +6,10 @@ from fastapi import Depends
 from app.api.deps import get_db
 from datetime import datetime
 import time
-import logging
+from app.utils import get_logger
 
 utils_router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @utils_router.get(
@@ -42,7 +42,6 @@ def health_check(db: Session = Depends(get_db)) -> HealthResponse:
     try:
         start = time.time()
         db.execute(text("SELECT 1"))
-        db.commit()
         response_time = (time.time() - start) * 1000  
         
         if response_time <= 500:
@@ -53,7 +52,6 @@ def health_check(db: Session = Depends(get_db)) -> HealthResponse:
             logger.warning(f"Health check: {status} - Response time: {response_time:.2f}ms (>500ms threshold)") 
             
     except Exception as e:
-        print(f"Health check failed: {e}")  
         status = "unhealthy"
         response_time = None
         

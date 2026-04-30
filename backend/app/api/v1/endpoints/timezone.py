@@ -1,11 +1,11 @@
 from fastapi import APIRouter, status
 from collections import defaultdict
-import logging
+from app.utils import get_logger
 from app.core import VALID_TIMEZONES
 from app.schemas import TimezonesResponse
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.get(
     "/",
@@ -27,9 +27,14 @@ def get_grouped_timezones() -> TimezonesResponse:
     grouped = defaultdict(list)
 
     for tz in VALID_TIMEZONES:
-        if "/" in tz and not tz.startswith("Etc/"):
+        if "/" in tz:
             region = tz.split("/")[0]
-            grouped[region].append(tz)
+            if region == "Etc":
+                grouped["Other"].append(tz)
+            else:
+                grouped[region].append(tz)
+        else:
+            grouped["Other"].append(tz)
 
     sorted_grouped = {
         region: sorted(timezones)

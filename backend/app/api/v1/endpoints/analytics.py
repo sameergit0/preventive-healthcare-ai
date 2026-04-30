@@ -5,11 +5,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from app.api.deps import get_db
 from app.models import User, HealthMetric
-from app.core import get_current_user
+from app.core import (
+    get_current_user, STEPS_GOAL_HIGH, 
+    SLEEP_GOAL_HIGH, WATER_GOAL_HIGH,
+    ACTIVITY_GOAL_HIGH, SEDENTARY_LIMIT_LOW,
+    SUGAR_LIMIT_LOW, FRUITS_GOAL_HIGH
+)
 from app.schemas import MetricSummary, HealthSummaryResponse, Insight, HealthInsightsResponse, MetricTrend, HealthTrendsResponse, Recommendation, HealthRecommendationsResponse, HealthScorePoint, HealthScoreHistoryResponse
+from app.utils import get_metric_scores, calculate_daily_health_score, get_logger
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 @router.get(
     "/summary",
@@ -59,123 +65,68 @@ def get_health_summary(
         HealthMetric.log_date <= end_date
     ]
 
-    logger.debug(f"Fetching steps metrics for user_id={current_user.id}")
-    
-    steps_avg, steps_total, steps_max, steps_min, steps_days = db.query(
-        func.avg(HealthMetric.steps),
-        func.sum(HealthMetric.steps),
-        func.max(HealthMetric.steps),
-        func.min(HealthMetric.steps),
-        func.count(HealthMetric.steps)
+    # Metrics mapping for cleaner code
+    metrics_query = db.query(
+        func.avg(HealthMetric.steps), func.sum(HealthMetric.steps), func.max(HealthMetric.steps), func.min(HealthMetric.steps), func.count(HealthMetric.steps),
+        func.avg(HealthMetric.sleep_hours), func.sum(HealthMetric.sleep_hours), func.max(HealthMetric.sleep_hours), func.min(HealthMetric.sleep_hours), func.count(HealthMetric.sleep_hours),
+        func.avg(HealthMetric.water_intake), func.sum(HealthMetric.water_intake), func.max(HealthMetric.water_intake), func.min(HealthMetric.water_intake), func.count(HealthMetric.water_intake),
+        func.avg(HealthMetric.activity_minutes), func.sum(HealthMetric.activity_minutes), func.max(HealthMetric.activity_minutes), func.min(HealthMetric.activity_minutes), func.count(HealthMetric.activity_minutes),
+        func.avg(HealthMetric.sedentary_minutes), func.sum(HealthMetric.sedentary_minutes), func.max(HealthMetric.sedentary_minutes), func.min(HealthMetric.sedentary_minutes), func.count(HealthMetric.sedentary_minutes),
+        func.avg(HealthMetric.nutrition_sugar), func.sum(HealthMetric.nutrition_sugar), func.max(HealthMetric.nutrition_sugar), func.min(HealthMetric.nutrition_sugar), func.count(HealthMetric.nutrition_sugar),
+        func.avg(HealthMetric.nutrition_fruits), func.sum(HealthMetric.nutrition_fruits), func.max(HealthMetric.nutrition_fruits), func.min(HealthMetric.nutrition_fruits), func.count(HealthMetric.nutrition_fruits),
     ).filter(*base_filter).first()
 
-    steps_achieved = db.query(func.count(HealthMetric.id)).filter(
-        *base_filter,
-        HealthMetric.steps >= 10000
-    ).scalar() or 0
+    # Unpack the results (5 values per metric)
+    s_avg, s_sum, s_max, s_min, s_days = metrics_query[0:5]
+    sl_avg, sl_sum, sl_max, sl_min, sl_days = metrics_query[5:10]
+    w_avg, w_sum, w_max, w_min, w_days = metrics_query[10:15]
+    a_avg, a_sum, a_max, a_min, a_days = metrics_query[15:20]
+    sed_avg, sed_sum, sed_max, sed_min, sed_days = metrics_query[20:25]
+    sug_avg, sug_sum, sug_max, sug_min, sug_days = metrics_query[25:30]
+    f_avg, f_sum, f_max, f_min, f_days = metrics_query[30:35]
 
-    logger.debug(
-        f"Steps data: {steps_days or 0} days recorded, "
-        f"{steps_achieved} days achieved target of 10,000 steps"
-    )
+    # Targets achieved (re-calculate or just use averages for simplicity in summary)
+    def calc_achievement(metric_col, target, is_inverse=False):
+        if is_inverse:
+            achieved = db.query(func.count(HealthMetric.id)).filter(*base_filter, metric_col <= target).scalar() or 0
+        else:
+            achieved = db.query(func.count(HealthMetric.id)).filter(*base_filter, metric_col >= target).scalar() or 0
+        return achieved
 
-    logger.debug(f"Fetching sleep metrics for user_id={current_user.id}")
-    
-    sleep_avg, sleep_total, sleep_max, sleep_min, sleep_days = db.query(
-        func.avg(HealthMetric.sleep_hours),
-        func.sum(HealthMetric.sleep_hours),
-        func.max(HealthMetric.sleep_hours),
-        func.min(HealthMetric.sleep_hours),
-        func.count(HealthMetric.sleep_hours)
-    ).filter(*base_filter).first()
+    steps_achieved = calc_achievement(HealthMetric.steps, STEPS_GOAL_HIGH)
+    sleep_achieved = calc_achievement(HealthMetric.sleep_hours, SLEEP_GOAL_HIGH)
+    water_achieved = calc_achievement(HealthMetric.water_intake, WATER_GOAL_HIGH)
+    activity_achieved = calc_achievement(HealthMetric.activity_minutes, ACTIVITY_GOAL_HIGH)
+    sedentary_achieved = calc_achievement(HealthMetric.sedentary_minutes, SEDENTARY_LIMIT_LOW, is_inverse=True)
+    sugar_achieved = calc_achievement(HealthMetric.nutrition_sugar, SUGAR_LIMIT_LOW, is_inverse=True)
+    fruits_achieved = calc_achievement(HealthMetric.nutrition_fruits, FRUITS_GOAL_HIGH)
 
-    sleep_achieved = db.query(func.count(HealthMetric.id)).filter(
-        *base_filter,
-        HealthMetric.sleep_hours >= 7.5
-    ).scalar() or 0
-
-    logger.debug(
-        f"Sleep data: {sleep_days or 0} days recorded, "
-        f"{sleep_achieved} days achieved target of 7.5 hours"
-    )
-
-    logger.debug(f"Fetching water intake metrics for user_id={current_user.id}")
-    
-    water_avg, water_total, water_max, water_min, water_days = db.query(
-        func.avg(HealthMetric.water_intake),
-        func.sum(HealthMetric.water_intake),
-        func.max(HealthMetric.water_intake),
-        func.min(HealthMetric.water_intake),
-        func.count(HealthMetric.water_intake)
-    ).filter(*base_filter).first()
-
-    water_achieved = db.query(func.count(HealthMetric.id)).filter(
-        *base_filter,
-        HealthMetric.water_intake >= 2.7
-    ).scalar() or 0
-
-    logger.debug(
-        f"Water data: {water_days or 0} days recorded, "
-        f"{water_achieved} days achieved target of 2.7L"
-    )
-
-    active_days = db.query(
-        func.count(func.distinct(HealthMetric.log_date))
-    ).filter(
-        *base_filter,
-        or_(
-            HealthMetric.steps.isnot(None),
-            HealthMetric.sleep_hours.isnot(None),
-            HealthMetric.water_intake.isnot(None)
-        )
-    ).scalar() or 0
-
+    active_days = db.query(func.count(func.distinct(HealthMetric.log_date))).filter(*base_filter).scalar() or 0
     total_days = days_range + 1
-    
-    logger.info(
-        f"Health summary generated for user_id={current_user.id}: "
-        f"{active_days}/{total_days} active days "
-        f"(Steps: {steps_days or 0}, Sleep: {sleep_days or 0}, Water: {water_days or 0})"
-    )
-    
-    steps_summary = MetricSummary(
-        average=round(steps_avg, 2) if steps_avg is not None else None,
-        total=steps_total,
-        max=steps_max,
-        min=steps_min,
-        days_recorded=steps_days or 0,
-        target=10000,
-        achievement_rate=round((steps_achieved / steps_days) * 100, 1) if steps_days and steps_days > 0 else None
-    )
 
-    sleep_summary = MetricSummary(
-        average=round(sleep_avg, 1) if sleep_avg is not None else None,
-        total=round(sleep_total, 1) if sleep_total is not None else None,
-        max=sleep_max,
-        min=sleep_min,
-        days_recorded=sleep_days or 0,
-        target=7.5,
-        achievement_rate=round((sleep_achieved / sleep_days) * 100, 1) if sleep_days and sleep_days > 0 else None
-    )
-
-    water_summary = MetricSummary(
-        average=round(water_avg, 1) if water_avg is not None else None,
-        total=round(water_total, 1) if water_total is not None else None,
-        max=water_max,
-        min=water_min,
-        days_recorded=water_days or 0,
-        target=2.7,
-        achievement_rate=round((water_achieved / water_days) * 100, 1) if water_days and water_days > 0 else None
-    )
+    def make_summary(avg, total, mx, mn, days, target, achieved, round_to=1):
+        return MetricSummary(
+            average=round(avg, round_to) if avg is not None else None,
+            total=round(total, round_to) if total is not None else None,
+            max=mx,
+            min=mn,
+            days_recorded=days or 0,
+            target=target,
+            achievement_rate=round((achieved / days) * 100, 1) if days and days > 0 else None
+        )
 
     return HealthSummaryResponse(
         period_start=start_date,
         period_end=end_date,
         total_days=total_days,
         active_days=active_days,
-        steps=steps_summary,
-        sleep=sleep_summary,
-        water=water_summary
+        steps=make_summary(s_avg, s_sum, s_max, s_min, s_days, STEPS_GOAL_HIGH, steps_achieved, 0),
+        sleep=make_summary(sl_avg, sl_sum, sl_max, sl_min, sl_days, SLEEP_GOAL_HIGH, sleep_achieved, 1),
+        water=make_summary(w_avg, w_sum, w_max, w_min, w_days, WATER_GOAL_HIGH, water_achieved, 1),
+        activity=make_summary(a_avg, a_sum, a_max, a_min, a_days, ACTIVITY_GOAL_HIGH, activity_achieved, 0),
+        sedentary=make_summary(sed_avg, sed_sum, sed_max, sed_min, sed_days, SEDENTARY_LIMIT_LOW, sedentary_achieved, 0),
+        sugar=make_summary(sug_avg, sug_sum, sug_max, sug_min, sug_days, SUGAR_LIMIT_LOW, sugar_achieved, 1),
+        fruits=make_summary(f_avg, f_sum, f_max, f_min, f_days, FRUITS_GOAL_HIGH, fruits_achieved, 0)
     )
 
 @router.get(
@@ -217,133 +168,84 @@ def get_health_insights(
         HealthMetric.log_date <= end_date
     ]
     
-    steps_avg, sleep_avg, water_avg = db.query(
+    averages = db.query(
         func.avg(HealthMetric.steps),
         func.avg(HealthMetric.sleep_hours),
-        func.avg(HealthMetric.water_intake)
+        func.avg(HealthMetric.water_intake),
+        func.avg(HealthMetric.activity_minutes),
+        func.avg(HealthMetric.sedentary_minutes),
+        func.avg(HealthMetric.nutrition_sugar),
+        func.avg(HealthMetric.nutrition_fruits)
     ).filter(*base_filter).first()
     
-    logger.debug(
-        f"Averages for user_id={current_user.id}: "
-        f"Steps={steps_avg}, Sleep={sleep_avg}, Water={water_avg}"
+    # We need a sample for sleep quality since it's a string (get most frequent or just latest)
+    sleep_quality = db.query(HealthMetric.sleep_quality).filter(
+        *base_filter, 
+        HealthMetric.sleep_quality.isnot(None)
+    ).order_by(HealthMetric.log_date.desc()).first()
+    sleep_quality = sleep_quality[0] if sleep_quality else None
+
+    s_avg, sl_avg, w_avg, a_avg, sed_avg, sug_avg, f_avg = averages
+    
+    logger.debug(f"Averages for insights: {averages}")
+    
+    metric_scores = get_metric_scores(
+        steps=s_avg, sleep=sl_avg, water=w_avg, 
+        activity=a_avg, sedentary=sed_avg, 
+        sugar=sug_avg, fruits=f_avg
     )
     
     insights = []
     
-    # steps
-    if steps_avg is None:
-        insights.append(Insight(
-            type="steps",
-            message="No step data available. Start tracking your steps.",
-            severity="warning"
-        ))
-        steps_score = 50
-        
-    elif steps_avg < 5000:
-        insights.append(Insight(
-            type="steps",
-            message="Your activity level is low. Try to walk more daily.",
-            severity="critical"
-        ))
-        steps_score = 40
-        
-    elif steps_avg < 10000:
-        insights.append(Insight(
-            type="steps",
-            message="You're close to your step goal. Keep pushing!",
-            severity="warning"
-        ))
-        steps_score = 70
-        
-    else:
-        insights.append(Insight(
-            type="steps",
-            message="Excellent! You're consistently active.",
-            severity="good"
-        ))
-        steps_score = 100
-      
-        
-    # sleep
-    if sleep_avg is None:
-        insights.append(Insight(
-            type="sleep",
-            message="No sleep data available. Start tracking your sleep.",
-            severity="warning"
-        ))
-        sleep_score = 50
-        
-    elif sleep_avg < 6:
-        insights.append(Insight(
-            type="sleep",
-            message="You are not getting enough sleep.",
-            severity="critical"
-        ))
-        sleep_score = 40
-        
-    elif sleep_avg < 7.5:
-        insights.append(Insight(
-            type="sleep",
-            message="Your sleep is okay but can be improved.",
-            severity="warning"
-        ))
-        sleep_score = 70
-        
-    else:
-        insights.append(Insight(
-            type="sleep",
-            message="Great! You have a healthy sleep pattern.",
-            severity="good"
-        ))
-        sleep_score = 100
-        
-        
-    # water
-    if water_avg is None:
-        insights.append(Insight(
-            type="water",
-            message="No water intake data available.",
-            severity="warning"
-        ))
-        water_score = 50
-        
-    elif water_avg < 2:
-        insights.append(Insight(
-            type="water",
-            message="You should drink more water daily.",
-            severity="critical"
-        ))
-        water_score = 40
-        
-    elif water_avg < 2.7:
-        insights.append(Insight(
-            type="water",
-            message="Increase your water intake slightly.",
-            severity="warning"
-        ))
-        water_score = 70
-        
-    else:
-        insights.append(Insight(
-            type="water",
-            message="Good hydration level maintained.",
-            severity="good"
-        ))
-        water_score = 100
-   
-        
-    overall_score = int(
-        (steps_score * 0.4) +
-        (sleep_score * 0.3) +
-        (water_score * 0.3)
-    )
-    
-    overall_score = max(0, min(100, overall_score))
-    
-    logger.info(
-        f"Insights generated for user_id={current_user.id}: "
-        f"Score={overall_score}, Steps={steps_score}, Sleep={sleep_score}, Water={water_score}"
-    )
+    def add_insight(m_type, score, low_msg, warn_msg, good_msg):
+        if score == 40:
+            insights.append(Insight(type=m_type, message=low_msg, severity="critical"))
+        elif score == 70:
+            insights.append(Insight(type=m_type, message=warn_msg, severity="warning"))
+        elif score == 100:
+            insights.append(Insight(type=m_type, message=good_msg, severity="good"))
+
+    add_insight("steps", metric_scores["steps"], 
+                "Your activity level is low. Try to walk more daily.", 
+                "You're close to your step goal. Keep pushing!", 
+                "Excellent! You're consistently active.")
+
+    add_insight("sleep", metric_scores["sleep"], 
+                "You are not getting enough sleep.", 
+                "Your sleep duration is okay but can be improved.", 
+                "Great! You have a healthy sleep pattern.")
+
+    add_insight("water", metric_scores["water"], 
+                "You should drink more water daily.", 
+                "Increase your water intake slightly.", 
+                "Good hydration level maintained.")
+
+    add_insight("activity", metric_scores["activity"], 
+                "Very low physical activity detected.", 
+                "Try to add more active minutes to your day.", 
+                "Excellent daily activity levels!")
+
+    add_insight("sedentary", metric_scores["sedentary"], 
+                "You are sitting for too long. Move more!", 
+                "Try to reduce your sedentary time.", 
+                "Good balance between sitting and moving.")
+
+    add_insight("sugar", metric_scores["sugar"], 
+                "Your sugar intake is too high.", 
+                "Try to reduce sweet snacks and drinks.", 
+                "Great job keeping sugar intake low!")
+
+    add_insight("fruits", metric_scores["fruits"], 
+                "You should eat more fruits daily.", 
+                "Almost there with your fruit intake goal.", 
+                "Excellent variety of fruits in your diet!")
+
+    overall_score = calculate_daily_health_score(
+        steps=s_avg, sleep_hours=sl_avg, water_intake=w_avg,
+        sleep_quality=sleep_quality, activity_minutes=a_avg,
+        sedentary_minutes=sed_avg, nutrition_sugar=sug_avg,
+        nutrition_fruits=f_avg
+    ) or 0
     
     return HealthInsightsResponse(
         overall_score=overall_score,
@@ -366,101 +268,50 @@ def get_health_trends(
     Generate health trends for authenticated user within date range.
     """
     
-    logger.debug(f"Generating trends for user_id={current_user.id} from {start_date} to {end_date}")
-    
     if start_date > end_date:
-        logger.warning(f"Invalid date range for user_id={current_user.id}: {start_date} > {end_date}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Start date cannot be after end date"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
         
     days = (end_date - start_date).days + 1
     if days > 90:
-        logger.warning(f"Date range exceeds 90 days for user_id={current_user.id}: {days} days")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Range cannot exceed 90 days"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Range cannot exceed 90 days")
         
-    logger.debug(f"Period length: {days} days")
-        
-    current_filter = [
-        HealthMetric.user_id == current_user.id,
-        HealthMetric.log_date >= start_date,
-        HealthMetric.log_date <= end_date
-    ]
+    current_filter = [HealthMetric.user_id == current_user.id, HealthMetric.log_date >= start_date, HealthMetric.log_date <= end_date]
     
-    current_steps, current_sleep, current_water = db.query(
-        func.avg(HealthMetric.steps),
-        func.avg(HealthMetric.sleep_hours),
-        func.avg(HealthMetric.water_intake)
+    current_metrics = db.query(
+        func.avg(HealthMetric.steps), func.avg(HealthMetric.sleep_hours), func.avg(HealthMetric.water_intake),
+        func.avg(HealthMetric.activity_minutes), func.avg(HealthMetric.sedentary_minutes),
+        func.avg(HealthMetric.nutrition_sugar), func.avg(HealthMetric.nutrition_fruits)
     ).filter(*current_filter).first()
-    
-    logger.debug(
-        f"Current period averages for user_id={current_user.id}: "
-        f"Steps={current_steps}, Sleep={current_sleep}, Water={current_water}"
-    )
     
     prev_end = start_date - timedelta(days=1)
     prev_start = prev_end - timedelta(days=days - 1)
+    prev_filter = [HealthMetric.user_id == current_user.id, HealthMetric.log_date >= prev_start, HealthMetric.log_date <= prev_end]
     
-    logger.debug(f"Previous period range: {prev_start} to {prev_end} ({days} days)")
-    
-    prev_filter = [
-        HealthMetric.user_id == current_user.id,
-        HealthMetric.log_date >= prev_start,
-        HealthMetric.log_date <= prev_end
-    ]
-    
-    prev_steps, prev_sleep, prev_water = db.query(
-        func.avg(HealthMetric.steps),
-        func.avg(HealthMetric.sleep_hours),
-        func.avg(HealthMetric.water_intake)
+    prev_metrics = db.query(
+        func.avg(HealthMetric.steps), func.avg(HealthMetric.sleep_hours), func.avg(HealthMetric.water_intake),
+        func.avg(HealthMetric.activity_minutes), func.avg(HealthMetric.sedentary_minutes),
+        func.avg(HealthMetric.nutrition_sugar), func.avg(HealthMetric.nutrition_fruits)
     ).filter(*prev_filter).first()
     
-    logger.debug(
-        f"Previous period averages for user_id={current_user.id}: "
-        f"Steps={prev_steps}, Sleep={prev_sleep}, Water={prev_water}"
-    )
-    
-    # utility function
     def calc_change(curr, prev):
-        if curr is None or prev is None or prev == 0:
-            return None
-        change = round(((curr - prev) / prev) * 100, 1)
-        logger.debug(f"Calculated change: {change}% (curr={curr}, prev={prev})")
-        return change
+        if curr is None or prev is None or prev == 0: return None
+        return round(((curr - prev) / prev) * 100, 1)
 
-    steps_trend = MetricTrend(
-        current_avg=round(current_steps, 1) if current_steps else None,
-        previous_avg=round(prev_steps, 1) if prev_steps else None,
-        change_percent=calc_change(current_steps, prev_steps)
-    )
+    def make_trend(curr, prev, round_to=1):
+        return MetricTrend(
+            current_avg=round(curr, round_to) if curr is not None else None,
+            previous_avg=round(prev, round_to) if prev is not None else None,
+            change_percent=calc_change(curr, prev)
+        )
 
-    sleep_trend = MetricTrend(
-        current_avg=round(current_sleep, 1) if current_sleep else None,
-        previous_avg=round(prev_sleep, 1) if prev_sleep else None,
-        change_percent=calc_change(current_sleep, prev_sleep)
-    )
-
-    water_trend = MetricTrend(
-        current_avg=round(current_water, 1) if current_water else None,
-        previous_avg=round(prev_water, 1) if prev_water else None,
-        change_percent=calc_change(current_water, prev_water)
-    )
-    
-    logger.info(
-        f"Trends for user_id={current_user.id}: "
-        f"Steps={steps_trend.change_percent}%, "
-        f"Sleep={sleep_trend.change_percent}%, "
-        f"Water={water_trend.change_percent}%"
-    )
-    
     return HealthTrendsResponse(
-        steps=steps_trend,
-        sleep=sleep_trend,
-        water=water_trend
+        steps=make_trend(current_metrics[0], prev_metrics[0], 0),
+        sleep=make_trend(current_metrics[1], prev_metrics[1], 1),
+        water=make_trend(current_metrics[2], prev_metrics[2], 1),
+        activity=make_trend(current_metrics[3], prev_metrics[3], 0),
+        sedentary=make_trend(current_metrics[4], prev_metrics[4], 0),
+        sugar=make_trend(current_metrics[5], prev_metrics[5], 1),
+        fruits=make_trend(current_metrics[6], prev_metrics[6], 0)
     )
     
 @router.get(
@@ -475,138 +326,47 @@ def get_health_recommendations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> HealthRecommendationsResponse:
-    """
-    Generate recommendations for authenticated user within date range.
-    """
-    
-    logger.debug(f"Request received: user_id={current_user.id}, start={start_date}, end={end_date}")
+    """Generate recommendations for authenticated user within date range."""
     
     if start_date > end_date:
-        logger.warning(f"Invalid date range: user_id={current_user.id}, start={start_date}, end={end_date}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Start date cannot be after end date"
-        )
-    
-    days_range = (end_date - start_date).days
-    if days_range > 90:
-        logger.warning(f"Date range too large: user_id={current_user.id}, days={days_range}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Range cannot exceed 90 days"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
         
-    base_filter = [
-        HealthMetric.user_id == current_user.id,
-        HealthMetric.log_date >= start_date,
-        HealthMetric.log_date <= end_date
-    ]
+    base_filter = [HealthMetric.user_id == current_user.id, HealthMetric.log_date >= start_date, HealthMetric.log_date <= end_date]
     
-    steps_avg, sleep_avg, water_avg = db.query(
-        func.avg(HealthMetric.steps),
-        func.avg(HealthMetric.sleep_hours),
-        func.avg(HealthMetric.water_intake)
+    averages = db.query(
+        func.avg(HealthMetric.steps), func.avg(HealthMetric.sleep_hours), func.avg(HealthMetric.water_intake),
+        func.avg(HealthMetric.activity_minutes), func.avg(HealthMetric.sedentary_minutes),
+        func.avg(HealthMetric.nutrition_sugar), func.avg(HealthMetric.nutrition_fruits)
     ).filter(*base_filter).first()
     
-    logger.debug(
-        f"Averages fetched: user_id={current_user.id}, "
-        f"steps_avg={steps_avg}, sleep_avg={sleep_avg}, water_avg={water_avg}"
-    )
-    
+    s_avg, sl_avg, w_avg, a_avg, sed_avg, sug_avg, f_avg = averages
     recommendations = []
     
-    # steps
-    if steps_avg is None:
-        recommendations.append(Recommendation(
-            type="steps",
-            message="Start tracking your daily steps to get personalized recommendations.",
-            priority="medium"
-        ))
+    # 1. Activity (Steps & Active Minutes)
+    if s_avg is not None and s_avg < 6000:
+        recommendations.append(Recommendation(type="steps", message="Try to increase your daily steps to at least 6,000.", priority="high"))
+    if a_avg is not None and a_avg < 20:
+        recommendations.append(Recommendation(type="activity", message="Aim for at least 20-30 minutes of physical activity daily.", priority="high"))
         
-    elif steps_avg < 6000:
-        recommendations.append(Recommendation(
-            type="steps",
-            message="Increase your daily steps by at least 3,000 to improve activity level.",
-            priority="high"
-        ))
+    # 2. Sleep
+    if sl_avg is not None and sl_avg < 7:
+        recommendations.append(Recommendation(type="sleep", message="Try to get at least 7-8 hours of sleep for better recovery.", priority="medium"))
         
-    elif steps_avg < 10000:
-        recommendations.append(Recommendation(
-            type="steps",
-            message="You're close to your goal. Try adding 1,000–2,000 more steps daily.",
-            priority="medium"
-        ))
+    # 3. Hydration
+    if w_avg is not None and w_avg < 2:
+        recommendations.append(Recommendation(type="water", message="Your water intake is low. Aim for 2.5L+ daily.", priority="medium"))
         
-    else:
-        recommendations.append(Recommendation(
-            type="steps",
-            message="Great job! Maintain your current activity level.",
-            priority="low"
-        ))
+    # 4. Sedentary Time
+    if sed_avg is not None and sed_avg > 480:
+        recommendations.append(Recommendation(type="sedentary", message="You spend a lot of time sitting. Try taking short walks every hour.", priority="medium"))
         
-    # sleep
-    if sleep_avg is None:
-        recommendations.append(Recommendation(
-            type="sleep",
-            message="Start tracking your sleep to improve your health insights.",
-            priority="medium"
-        ))
+    # 5. Nutrition
+    if sug_avg is not None and sug_avg > 50:
+        recommendations.append(Recommendation(type="sugar", message="Your sugar intake is high. Try to limit processed sweets.", priority="high"))
+    if f_avg is not None and f_avg < 2:
+        recommendations.append(Recommendation(type="fruits", message="Add more fruits to your diet for essential vitamins.", priority="low"))
         
-    elif sleep_avg < 6:
-        recommendations.append(Recommendation(
-            type="sleep",
-            message="Try to increase your sleep duration by at least 1–1.5 hours.",
-            priority="high"
-        ))
-        
-    elif sleep_avg < 7.5:
-        recommendations.append(Recommendation(
-            type="sleep",
-            message="Improve your sleep routine to reach 7–8 hours.",
-            priority="medium"
-        ))
-        
-    else:
-        recommendations.append(Recommendation(
-            type="sleep",
-            message="Your sleep pattern is good. Keep it consistent.",
-            priority="low"
-        ))
-        
-    # water
-    if water_avg is None:
-        recommendations.append(Recommendation(
-            type="water",
-            message="Start tracking your water intake daily.",
-            priority="medium"
-        ))
-    elif water_avg < 2:
-        recommendations.append(Recommendation(
-            type="water",
-            message="Increase your daily water intake by at least 1 liter.",
-            priority="high"
-        ))
-    elif water_avg < 2.7:
-        recommendations.append(Recommendation(
-            type="water",
-            message="Try to drink a bit more water to reach optimal hydration.",
-            priority="medium"
-        ))
-    else:
-        recommendations.append(Recommendation(
-            type="water",
-            message="You are well hydrated. Maintain this habit.",
-            priority="low"
-        ))
-        
-    logger.info(
-        f"Recommendations generated: user_id={current_user.id}, "
-        f"count={len(recommendations)}"
-    )
-        
-    return HealthRecommendationsResponse(
-        recommendations=recommendations
-    )
+    return HealthRecommendationsResponse(recommendations=recommendations)
     
 @router.get(
     "/score-history",
@@ -621,30 +381,11 @@ def get_health_score_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> HealthScoreHistoryResponse:
-    """
-    Generate daily health score history for authenticated user within date range.
-    """
-
-    logger.debug(
-        f"Score history request: user_id={current_user.id}, "
-        f"start={start_date}, end={end_date}, include_empty={include_empty}"
-    )
-
+    """Generate daily health score history for authenticated user within date range."""
+    
     if start_date > end_date:
-        logger.warning(f"Invalid date range for user_id={current_user.id}: {start_date} > {end_date}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Start date cannot be after end date"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start date cannot be after end date")
         
-    days_range = (end_date - start_date).days
-    if days_range > 90:
-        logger.warning(f"Date range exceeds 90 days for user_id={current_user.id}: {days_range} days")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Range cannot exceed 90 days"
-        )
-
     logs = db.query(HealthMetric).filter(
         HealthMetric.user_id == current_user.id,
         HealthMetric.log_date >= start_date,
@@ -652,65 +393,29 @@ def get_health_score_history(
     ).all()
 
     log_dict = {log.log_date: log for log in logs}
-
     scores = []
     current_date = start_date
 
     while current_date <= end_date:
         log = log_dict.get(current_date)
-
         if not log:
             score = None  
         else:
-            if log.steps is not None:
-                if log.steps >= 10000:
-                    steps_score = 100
-                elif log.steps >= 6000:
-                    steps_score = 70
-                else:
-                    steps_score = 40
-            else:
-                steps_score = 0
-
-            if log.sleep_hours is not None:
-                if log.sleep_hours >= 7.5:
-                    sleep_score = 100
-                elif log.sleep_hours >= 6:
-                    sleep_score = 70
-                else:
-                    sleep_score = 40
-            else:
-                sleep_score = 0
-
-            if log.water_intake is not None:
-                if log.water_intake >= 2.7:
-                    water_score = 100
-                elif log.water_intake >= 2:
-                    water_score = 70
-                else:
-                    water_score = 40
-            else:
-                water_score = 0
-
-            score = int(
-                (steps_score * 0.4) +
-                (sleep_score * 0.3) +
-                (water_score * 0.3)
+            score = calculate_daily_health_score(
+                steps=log.steps,
+                sleep_hours=log.sleep_hours,
+                water_intake=log.water_intake,
+                sleep_quality=log.sleep_quality,
+                activity_minutes=log.activity_minutes,
+                sedentary_minutes=log.sedentary_minutes,
+                nutrition_sugar=log.nutrition_sugar,
+                nutrition_fruits=log.nutrition_fruits
             )
 
-        scores.append(HealthScorePoint(
-            date=current_date,
-            score=score
-        ))
-
+        scores.append(HealthScorePoint(date=current_date, score=score))
         current_date += timedelta(days=1)
 
     if not include_empty:
         scores = [s for s in scores if s.score is not None]
-
-    logger.info(
-        f"Score history generated: user_id={current_user.id}, "
-        f"points={len(scores)}"
-    )
 
     return HealthScoreHistoryResponse(scores=scores)

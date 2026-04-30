@@ -26,5 +26,10 @@ class Profile(Base):
         CheckConstraint('age > 0', name='check_age_positive'),
         CheckConstraint('weight > 0', name='check_weight_positive'),
         CheckConstraint('height > 0', name='check_height_positive'),
+        CheckConstraint('waist_cm > 0', name='check_waist_cm_positive'),
         CheckConstraint("gender IN ('M', 'F')", name='check_gender_valid'),
+        CheckConstraint(
+            "goal IN ('Weight Loss', 'Weight Gain', 'Muscle Building', 'Maintain Fitness', 'Improve Sleep', 'Reduce Stress')",
+            name="check_goal"
+        )
     )

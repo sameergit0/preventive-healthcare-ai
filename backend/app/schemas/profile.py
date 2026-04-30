@@ -127,6 +127,7 @@ class ProfileCreate(BaseModel):
     
     model_config = ConfigDict(
         str_strip_whitespace=True,
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "full_name": "John Doe",

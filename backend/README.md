@@ -20,9 +20,9 @@ It follows a **modular, production-ready backend design** suitable for real-worl
 ## ✨ Key Features
 
 * 🔐 **JWT Authentication** – Secure login & user management
-* 📊 **Health Metrics Tracking** – Steps, Sleep, Water, Food
-* 👤 **Profile Management** – BMI calculation, waist circumference tracking
-* 📈 **Analytics Engine** – Robust filtering (Today, Range, All), trends, and insights
+* 📊 **Expanded Health Metrics** – Tracking for Steps, Sleep (Hours & Quality), Water, Activity, Sedentary time, and Nutrition (Sugar/Fruits)
+* 👤 **Profile Management** – BMI calculation, waist circumference tracking, and photo management
+* 📈 **Advanced Analytics Engine** – Weighted health scoring, robust trends, and personalized recommendations across all metrics
 * 📂 **File Handling** – Profile image upload & static serving
 * 🔄 **Database Migrations** – Alembic-based schema versioning
 * ⚡ **Optimized APIs** – FastAPI async support
@@ -201,15 +201,17 @@ docker compose down
 
 ### 📊 Health Metrics
 
-* Daily logs (CRUD)
+* Daily logs (Upsert logic)
+* Tracking for: Steps, Sleep (Hours/Quality), Water, Activity/Sedentary minutes, Sugar, and Fruits
 * Time-series tracking
 
-### 📈 Analytics
+### 📈 Analytics Engine
 
-* Health trends
-* Insights
-* Recommendations
-* Score tracking
+* **Weighted Health Score**: Professional algorithm calculating overall wellness (0-100)
+* **Trend Analysis**: Percentage-based comparisons between current and previous periods
+* **Personalized Insights**: Auto-generated severity-based insights for all health categories
+* **Actionable Recommendations**: High/Medium/Low priority health suggestions
+* **Score History**: Historical health score visualization data
 
 ---
 

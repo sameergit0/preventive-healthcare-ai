@@ -27,3 +27,6 @@ def setup_logging():
     )
     
     return logging.getLogger(__name__), log_filename
+
+def get_logger(name: str):
+    return logging.getLogger(name)
