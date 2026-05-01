@@ -1,6 +1,18 @@
-import zoneinfo
-
-VALID_TIMEZONES = zoneinfo.available_timezones()
+VALID_TIMEZONES = [
+    "UTC", "GMT",
+    "Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos", "Africa/Nairobi",
+    "America/Anchorage", "America/Argentina/Buenos_Aires", "America/Chicago", 
+    "America/Denver", "America/Los_Angeles", "America/Mexico_City", 
+    "America/New_York", "America/Phoenix", "America/Sao_Paulo", "America/Toronto",
+    "Asia/Bangkok", "Asia/Dubai", "Asia/Hong_Kong", "Asia/Jakarta", 
+    "Asia/Jerusalem", "Asia/Kolkata", "Asia/Seoul", "Asia/Shanghai", 
+    "Asia/Singapore", "Asia/Tokyo",
+    "Australia/Adelaide", "Australia/Brisbane", "Australia/Melbourne", 
+    "Australia/Perth", "Australia/Sydney",
+    "Europe/Amsterdam", "Europe/Berlin", "Europe/Brussels", "Europe/Istanbul", 
+    "Europe/London", "Europe/Madrid", "Europe/Moscow", "Europe/Paris", "Europe/Rome",
+    "Pacific/Auckland", "Pacific/Honolulu"
+]
 
 # Health Thresholds
 STEPS_GOAL_HIGH = 10000

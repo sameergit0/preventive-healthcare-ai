@@ -17,25 +17,25 @@ logger = get_logger(__name__)
 def get_grouped_timezones() -> TimezonesResponse:
     """
     Get all available timezones grouped by region.
-    
-    Returns:
-        TimezonesResponse: Dictionary with region as key and list of timezones as value
     """
     
     logger.debug("Fetching grouped timezones")
     
+    # Use fallback if system timezones are not available
+    source_tzs = VALID_TIMEZONES if VALID_TIMEZONES else {"UTC", "GMT", "Asia/Kolkata", "America/New_York", "Europe/London"}
+    
     grouped = defaultdict(list)
 
-    for tz in VALID_TIMEZONES:
+    for tz in source_tzs:
         if "/" in tz:
-            region = tz.split("/")[0]
-            if region == "Etc":
-                grouped["Other"].append(tz)
-            else:
-                grouped[region].append(tz)
+            parts = tz.split("/")
+            region = parts[0]
+            # Use only the last part for display if desired, or keep full path
+            grouped[region].append(tz)
         else:
             grouped["Other"].append(tz)
 
+    # Sort regions and timezones within regions
     sorted_grouped = {
         region: sorted(timezones)
         for region, timezones in sorted(grouped.items())

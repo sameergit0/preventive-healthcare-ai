@@ -32,12 +32,17 @@ def create_or_update_daily_log(
     """
     
     today = get_user_today(current_user.timezone)
-    logger.debug(f"Upsert health log for user {current_user.email} on {today}")
+    logger.info(f"Upserting health log for user {current_user.email} on date {today}")
 
-    existing_log = db.query(HealthMetric).filter(HealthMetric.user_id == current_user.id, HealthMetric.log_date == today).first()
+    # Explicitly check for existing log for this user and date
+    existing_log = db.query(HealthMetric).filter(
+        HealthMetric.user_id == current_user.id, 
+        HealthMetric.log_date == today
+    ).first()
 
     try:
         if existing_log:
+            logger.info(f"Existing log found (ID: {existing_log.id}) for user {current_user.email} on {today}. Updating metrics.")
             update_data = data.model_dump(exclude_unset=True)
 
             for key, value in update_data.items():
@@ -45,12 +50,10 @@ def create_or_update_daily_log(
 
             db.commit()
             db.refresh(existing_log)
-            
-            logger.info(f"Health log updated for user {current_user.email} on {today}")
-            
             return existing_log
         
         else:
+            logger.info(f"No existing log for user {current_user.email} on {today}. Creating new entry.")
             new_log = HealthMetric(
                 user_id=current_user.id,
                 log_date=today,
@@ -60,9 +63,6 @@ def create_or_update_daily_log(
             db.add(new_log)
             db.commit()
             db.refresh(new_log)
-            
-            logger.info(f"New health log created for user {current_user.email} on {today}")
-
             return new_log
         
     except SQLAlchemyError as e:
