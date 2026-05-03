@@ -1,3 +1,5 @@
+# List of valid timezone strings (IANA Time Zone Database)
+# Used during signup and profile creation to ensure correct date-time calculations for users.
 VALID_TIMEZONES = [
     "UTC", "GMT",
     "Africa/Cairo", "Africa/Johannesburg", "Africa/Lagos", "Africa/Nairobi",
@@ -14,31 +16,43 @@ VALID_TIMEZONES = [
     "Pacific/Auckland", "Pacific/Honolulu"
 ]
 
-# Health Thresholds
-STEPS_GOAL_HIGH = 10000
-STEPS_GOAL_LOW = 6000
-
-SLEEP_GOAL_HIGH = 7.5
-SLEEP_GOAL_LOW = 6.0
-
-WATER_GOAL_HIGH = 2.7
-WATER_GOAL_LOW = 2.0
-
-ACTIVITY_GOAL_HIGH = 45
-ACTIVITY_GOAL_LOW = 20
-
-# Lower is better for sedentary time
-SEDENTARY_LIMIT_LOW = 480  # 8 hours
-SEDENTARY_LIMIT_HIGH = 600  # 10 hours
-
-# Lower is better for sugar
-SUGAR_LIMIT_LOW = 25
-SUGAR_LIMIT_HIGH = 50
-
-FRUITS_GOAL_HIGH = 3
-FRUITS_GOAL_LOW = 1
-
+# Image file extension mapping for Profile Photo uploads.
+# Maps MIME types to file extensions for storage.
 IMAGE_EXT_MAP = {
     "image/jpeg": "jpg",
     "image/png": "png"
+}
+
+# Daily health targets for achievement calculation (Analytics Summary)
+HEALTH_TARGETS = {
+    "steps": 10000,
+    "sleep": 8.0,
+    "water": 2.5,
+    "activity": 30.0,
+    "sedentary": 480.0,
+    "sugar": 25.0,
+    "fruits": 2.0
+}
+
+# Health Scoring Weights (Total = 1.0)
+HEALTH_SCORE_WEIGHTS = {
+    "metrics": 0.50,      
+    "lifestyle": 0.20,    
+    "physical": 0.15,     
+    "medical": 0.15       
+}
+
+# Baseline Weights (when no logs are present)
+BASELINE_SCORE_WEIGHTS = {
+    "lifestyle": 0.30,
+    "physical": 0.20,
+    "medical": 0.50
+}
+
+# Risk Level Thresholds
+RISK_LEVELS = {
+    "LOW": "Low",
+    "MODERATE": "Moderate",
+    "HIGH": "High",
+    "CRITICAL": "Critical"
 }

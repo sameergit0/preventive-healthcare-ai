@@ -17,7 +17,8 @@ logger = get_logger(__name__)
     "/daily-logs", 
     status_code=status.HTTP_201_CREATED, 
     response_model=DailyHealthLogResponse, 
-    summary="Create or update today's health log (upsert)"
+    summary="Daily Health Log (Upsert)",
+    description="Creates a new health log for today or updates an existing one. If a log exists, provided fields are overwritten with the new data."
 )
 def create_or_update_daily_log(
     data: DailyHealthLogCreate,
@@ -25,10 +26,13 @@ def create_or_update_daily_log(
     current_user: User = Depends(get_current_user)
 ) -> DailyHealthLogResponse:
     """
-    Create a new health log for today or update existing one.
+    Log health metrics for the current day. 
     
-    - Provide at least one metric (steps, sleep_hours, water_intake, or food_log)
-    - Food log supports breakfast, lunch, dinner with multiple items
+    This endpoint uses **Upsert** logic:
+    1. **Insert**: If no log exists for today (user's local time), a new record is created.
+    2. **Update**: If a log already exists, any provided fields will **overwrite** the existing database values.
+        
+    **Frontend Note**: To add or remove a meal, manage the list on the frontend and send the final version of the list here.
     """
     
     today = get_user_today(current_user.timezone)
@@ -43,9 +47,13 @@ def create_or_update_daily_log(
     try:
         if existing_log:
             logger.info(f"Existing log found (ID: {existing_log.id}) for user {current_user.email} on {today}. Updating metrics.")
+            
+            # exclude_unset=True ensures we only iterate over fields the user actually sent
             update_data = data.model_dump(exclude_unset=True)
 
             for key, value in update_data.items():
+                # OVERWRITE: The frontend manages the full list (adding/cutting).
+                # We save exactly what the frontend sends.
                 setattr(existing_log, key, value)
 
             db.commit()
@@ -77,31 +85,36 @@ def create_or_update_daily_log(
     "/daily-logs", 
     status_code=status.HTTP_200_OK, 
     response_model=AllLogsResponse, 
-    summary="Get health logs with flexible filtering"
+    summary="Get Health Logs (Filtered)",
+    description="Fetch health logs with support for today's data, specific date ranges, or full history with pagination."
 )
 def get_health_logs(
     request_type: Literal["today", "all", "range"] = Query(
         "all", 
-        description="Type of logs to fetch: 'today' for today's log, 'all' for paginated all logs, 'range' for date range"
+        description="Fetch type: 'today' (just today), 'all' (paginated history), or 'range' (start/end required)."
     ),
-    start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD) - required for 'range' type"),
-    end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD) - required for 'range' type"),
+    start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD) for 'range' search."),
+    end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD) for 'range' search."),
     
-    page: int = Query(1, ge=1, description="Page number - used for 'all' and 'range' types"),
-    limit: int = Query(20, ge=1, le=100, description="Number of logs per page - used for 'all' and 'range' types"),
+    page: int = Query(1, ge=1, description="Pagination: Page number."),
+    limit: int = Query(20, ge=1, le=100, description="Pagination: Items per page."),
     
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> AllLogsResponse:
     """
-    Get health logs with flexible filtering options.
+    Retrieve historical health logs with flexible filtering.
     
-    - **today**: Get today's log only
-    - **all**: Get all logs with pagination
-    - **range**: Get logs within date range with pagination
+    - **Today**: Fetches only the log matching the user's current local date.
+    - **All**: Returns all historical logs for the user, sorted newest to oldest.
+    - **Range**: Filters logs between `start_date` and `end_date` (inclusive). Max range is 1 year.
+    
+    Pagination applies to **All** and **Range** request types.
     """
     
-    # Handle "today" request type
+    logger.info(f"Health log retrieval requested: type={request_type}, user={current_user.email}")
+
+    # 1. Today's Log Only
     if request_type == "today":
         today = get_user_today(current_user.timezone)
         
@@ -118,7 +131,7 @@ def get_health_logs(
             total=1 if log else 0
         )
     
-    # Handle "range" request type
+    # 2. Date Range Request
     elif request_type == "range":
         if start_date is None or end_date is None:
             logger.warning(f"Missing dates for range request: user={current_user.email}")
@@ -138,7 +151,7 @@ def get_health_logs(
             logger.warning(f"Date range exceeded 1 year for user: {current_user.email}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Range exceeds 1 year. Please refine your search."
+                detail="Search range exceeds 1 year limit. Please refine your search."
             )
         
         base_filter = [
@@ -148,38 +161,35 @@ def get_health_logs(
         ]
         
         total_count = db.query(func.count(HealthMetric.id)).filter(*base_filter).scalar() or 0
-        
         offset = (page - 1) * limit
         
         logs = db.query(HealthMetric).filter(*base_filter).order_by(
             HealthMetric.log_date.desc()
         ).offset(offset).limit(limit).all()
         
-        logger.debug(f"Fetched {len(logs)} logs for range {start_date} to {end_date} for user: {current_user.email}")
+        logger.debug(f"Range search successful: {len(logs)} logs found for user {current_user.email}")
         
         return AllLogsResponse(
-            message=f"Fetched {len(logs)} logs from page {page} for range {start_date} to {end_date}" if logs 
-                    else f"No health logs found between {start_date} and {end_date}",
+            message=f"Found {len(logs)} logs (Page {page})" if logs else "No logs found in this range.",
             logs=logs,
             total=total_count
         )
     
-    # Handle "all" request type (default)
+    # 3. All Logs Request (Default)
     else:
         base_filter = [HealthMetric.user_id == current_user.id]
         
         total_count = db.query(func.count(HealthMetric.id)).filter(*base_filter).scalar() or 0
-        
         offset = (page - 1) * limit
         
         logs = db.query(HealthMetric).filter(*base_filter).order_by(
             HealthMetric.log_date.desc()
         ).offset(offset).limit(limit).all()
         
-        logger.debug(f"Fetched {len(logs)} of {total_count} total logs for user: {current_user.email} (page {page})")
+        logger.debug(f"History fetched for user {current_user.email}: {len(logs)} logs (Page {page})")
         
         return AllLogsResponse(
-            message=f"Successfully fetched {len(logs)} logs" if logs else "No health logs found for this user",
+            message=f"Fetched {len(logs)} logs (Page {page})" if logs else "No history found.",
             logs=logs,
             total=total_count
         )
@@ -188,7 +198,8 @@ def get_health_logs(
     "/daily-logs/{log_id}", 
     status_code=status.HTTP_200_OK, 
     response_model=DailyHealthLogResponse, 
-    summary="Update or clear health metrics for a specific log"
+    summary="Update or Clear Health Metrics",
+    description="Update specific fields or clear them entirely. To clear a field, send its value as `null` (JSON) or `None` (Python)."
 )
 def update_or_clear_metrics(
     log_id: int,
@@ -197,103 +208,105 @@ def update_or_clear_metrics(
     current_user: User = Depends(get_current_user)
 ) -> DailyHealthLogResponse:
     """
-    Update specific fields of a health log by ID.
+    Perform a precision update on a specific health log.
     
-    - Provide at least one metric to update (steps, sleep_hours, water_intake, or food_log)
-    - Set a field to None to clear its value
-    - Food log can be partially updated
+    **Behavior**:
+    - **Overwrite**: Any field you provide will replace the existing value in the database.
+    - **Clear Data**: To set a field to NULL (clear it), send the field with a `null` value.
+    - **Meal Deletion**: To remove a meal, send the `food_log` list without that specific meal entry.
+    
+    Returns the fully updated log object.
     """
     
-    log = db.query(HealthMetric).filter(HealthMetric.id == log_id, HealthMetric.user_id == current_user.id).first()
+    # 1. Fetch existing log
+    log = db.query(HealthMetric).filter(
+        HealthMetric.id == log_id, 
+        HealthMetric.user_id == current_user.id
+    ).first()
 
     if not log:
-        logger.warning(f"Update failed - Log {log_id} not found for user: {current_user.email}")
+        logger.warning(f"Update failed: Log {log_id} not found for user {current_user.email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Log entry with id {log_id} not found"
+            detail=f"Health log entry not found."
         )
 
+    # 2. Extract update data
+    # exclude_unset=True is vital: it allows us to detect when a user explicitly sends 'null'
     update_data = data.model_dump(exclude_unset=True)
     
     if not update_data:
-        logger.warning(f"Update failed - No data provided for log {log_id} by user: {current_user.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No data provided for update. Please provide at least one field to update"
+            detail="No data provided for update. Please include at least one field."
         )
         
+    # 3. Apply changes
     updated_fields = []
-
     for key, value in update_data.items():
         setattr(log, key, value)
-        logger.debug(f"Updated {key}={value} for log {log_id}")
-
         updated_fields.append(key)
 
+    # 4. Persistence
     try:
         db.commit()
         db.refresh(log)
-        
-        logger.info(f"Health log {log_id} updated successfully for user: {current_user.email} - Fields: {', '.join(updated_fields)}")
+        logger.info(f"Log {log_id} updated for {current_user.email}. Fields: {', '.join(updated_fields)}")
+        return log
         
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"Database error during update of log {log_id} for user {current_user.email}: {str(e)}")
+        logger.error(f"Persistence error for log {log_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Database error occurred while updating the log. Please try again."
+            detail="System error occurred while saving updates."
         )
-
-    return log
 
 @router.delete(
     "/daily-logs/today", 
     status_code=status.HTTP_204_NO_CONTENT, 
-    summary="Delete today's health log"
+    summary="Delete Today's Log",
+    description="Removes the health log for the current local date. Use this for 'Reset Dashboard' functionality."
 )
 def delete_today_log(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> None:
     """
-    Delete today's health log for the authenticated user.
-    
-    - Only the log for current date (based on user's timezone) is deleted
-    - This action cannot be undone
+    Finds and deletes the health log for today (based on user's timezone).
     """
-    
     today = get_user_today(current_user.timezone)
-    logger.debug(f"Attempting to delete today's log for user: {current_user.email} on {today}")
+    logger.info(f"Requested deletion of today's log for {current_user.email} on {today}")
 
-    log = db.query(HealthMetric).filter(HealthMetric.user_id == current_user.id, HealthMetric.log_date == today).first()
+    log = db.query(HealthMetric).filter(
+        HealthMetric.user_id == current_user.id, 
+        HealthMetric.log_date == today
+    ).first()
         
     if not log:
-        logger.warning(f"Delete failed - No log found for today ({today}) for user: {current_user.email}")
+        logger.warning(f"Delete failed: No log found for {today} (user={current_user.email})")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No log found for today ({today})"
+            detail=f"No health log exists for today ({today})."
         )
 
     try:
         db.delete(log)
         db.commit()
-        
-        logger.info(f"Today's health log deleted successfully for user: {current_user.email} on {today}")
-        
+        logger.info(f"Today's log ({today}) deleted successfully for {current_user.email}")
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"Database error during deletion of today's log for user {current_user.email}: {str(e)}")
+        logger.error(f"Persistence error during deletion: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database error occurred while deleting the log. Please try again."
+            detail="System error occurred while deleting today's log."
         )
-
-    return None 
 
 @router.delete(
     "/daily-logs/{log_id}", 
     status_code=status.HTTP_204_NO_CONTENT, 
-    summary="Delete a specific health log"
+    summary="Delete Specific Log",
+    description="Deletes a health log by its ID. Only allowed for the owner of the log."
 )
 def delete_full_log(
     log_id: int,
@@ -301,36 +314,31 @@ def delete_full_log(
     current_user: User = Depends(get_current_user)
 ) -> None:
     """
-    Delete a specific health log by its ID.
-    
-    - Only the owner of the log can delete it
-    - This action cannot be undone
-    - Useful for deleting past entries or incorrect data
+    Deletes a historical health log entry. Useful for clearing incorrect data from past dates.
     """
+    logger.info(f"Requested deletion of log {log_id} for {current_user.email}")
     
-    logger.debug(f"Attempting to delete health log {log_id} for user: {current_user.email}")
-    
-    log = db.query(HealthMetric).filter(HealthMetric.id == log_id, HealthMetric.user_id == current_user.id).first()
+    log = db.query(HealthMetric).filter(
+        HealthMetric.id == log_id, 
+        HealthMetric.user_id == current_user.id
+    ).first()
 
     if not log:
-        logger.warning(f"Delete failed - Health log {log_id} not found for user: {current_user.email}")
+        logger.warning(f"Delete failed: Log {log_id} not found or access denied for {current_user.email}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"Health log with id {log_id} not found"
+            detail=f"Health log not found."
         )
 
     try:
+        log_date = log.log_date
         db.delete(log)
         db.commit()
-        
-        logger.info(f"Health log {log_id} (date: {log.log_date}) deleted successfully for user: {current_user.email}")
-        
+        logger.info(f"Log {log_id} (Date: {log_date}) deleted successfully for {current_user.email}")
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"Database error during deletion of health log {log_id} for user {current_user.email}: {str(e)}")
+        logger.error(f"Persistence error for log {log_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Database error occurred while deleting the log. Please try again."
+            detail="System error occurred while deleting the log."
         )
-    
-    return None

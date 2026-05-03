@@ -11,17 +11,23 @@ logger = get_logger(__name__)
     "/",
     status_code=status.HTTP_200_OK,
     response_model=TimezonesResponse,  
-    summary="Get grouped timezones",
-    description="Returns all available timezones grouped by geographic region."
+    summary="Fetch Grouped Timezones",
+    description="Returns a dictionary of all supported IANA timezones, grouped by their geographical regions (e.g., Asia, Europe, America)."
 )
 def get_grouped_timezones() -> TimezonesResponse:
     """
-    Get all available timezones grouped by region.
+    Retrieve all valid timezones grouped by their top-level region.
+    
+    This is useful for frontend onboarding/signup flows where users 
+    need to select their local timezone from a nested or grouped dropdown.
+    
+    Returns:
+        TimezonesResponse: A dictionary where keys are regions and values are lists of timezone strings.
     """
     
-    logger.debug("Fetching grouped timezones")
+    logger.debug("Starting timezone grouping process")
     
-    # Use fallback if system timezones are not available
+    # Fallback to a set of common timezones if VALID_TIMEZONES is empty
     source_tzs = VALID_TIMEZONES if VALID_TIMEZONES else {"UTC", "GMT", "Asia/Kolkata", "America/New_York", "Europe/London"}
     
     grouped = defaultdict(list)
@@ -30,18 +36,17 @@ def get_grouped_timezones() -> TimezonesResponse:
         if "/" in tz:
             parts = tz.split("/")
             region = parts[0]
-            # Use only the last part for display if desired, or keep full path
             grouped[region].append(tz)
         else:
             grouped["Other"].append(tz)
 
-    # Sort regions and timezones within regions
+    # Sort regions alphabetically and sort timezones within each region
     sorted_grouped = {
         region: sorted(timezones)
         for region, timezones in sorted(grouped.items())
     }
         
-    logger.info(f"Returning {len(sorted_grouped)} timezone regions")
+    logger.info(f"Successfully grouped {len(source_tzs)} timezones into {len(sorted_grouped)} regions")
     
     return TimezonesResponse(grouped=sorted_grouped)
 

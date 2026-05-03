@@ -13,3 +13,5 @@ class User(Base):
     
     profile = relationship("Profile", back_populates="user", uselist=False)
     health_metrics = relationship("HealthMetric", back_populates="user")
+    lifestyle = relationship("Lifestyle", back_populates="user", uselist=False)
+    medical_history = relationship("MedicalHistory", back_populates="user", uselist=False)

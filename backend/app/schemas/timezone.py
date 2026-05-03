@@ -1,18 +1,19 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Dict, List
 
 class TimezonesResponse(BaseModel):
-    grouped: Dict[str, List[str]]
+    grouped: Dict[str, List[str]] = Field(
+        ..., 
+        description="A dictionary mapping regions (e.g., 'Asia') to lists of full timezone strings (e.g., 'Asia/Kolkata')"
+    )
     
     model_config = ConfigDict(
-        from_attributes=True, 
-        extra="forbid",
         json_schema_extra={
             "example": {
                 "grouped": {
                     "Asia": ["Asia/Kolkata", "Asia/Dubai", "Asia/Tokyo"],
                     "Europe": ["Europe/London", "Europe/Paris"],
-                    "Etc": ["UTC", "GMT"]
+                    "Other": ["UTC", "GMT"]
                 }
             }
         }

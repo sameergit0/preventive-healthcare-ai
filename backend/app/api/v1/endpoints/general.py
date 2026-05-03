@@ -16,31 +16,47 @@ logger = get_logger(__name__)
     "/", 
     status_code=status.HTTP_200_OK, 
     response_model=HomeResponse,  
-    summary="Home Endpoint"
+    summary="API Root / Welcome",
+    description="Returns a welcome message to verify the API is running and accessible."
 )
 def home() -> HomeResponse:  
-    """Welcome endpoint for the Preventive Healthcare AI API"""
+    """
+    Welcome endpoint for the Preventive Healthcare AI API.
     
+    Returns:
+        HomeResponse: A simple message object.
+    """
     logger.debug("Home endpoint accessed")
     
     return HomeResponse(  
         message="Welcome to the Preventive Healthcare AI API."
     )
-
     
 @utils_router.get(
     "/health", 
     status_code=status.HTTP_200_OK, 
     response_model=HealthResponse, 
-    summary="Health check endpoint"
+    summary="System Health Status",
+    description="Performs a health check on the API and its core dependencies (Database)."
 )
-def health_check(db: Session = Depends(get_db)) -> HealthResponse:
-    """Comprehensive health check endpoint"""
+def health_check(
+    db: Session = Depends(get_db)
+) -> HealthResponse:
+    """
+    Comprehensive health check endpoint.
+    
+    Checks:
+    - Database connectivity
+    - Database response time
+    - API Versioning
+    """
+    logger.debug("Health check endpoint accessed")
     
     response_time = None
     
     try:
         start = time.time()
+        # Test database connectivity
         db.execute(text("SELECT 1"))
         response_time = (time.time() - start) * 1000  
         

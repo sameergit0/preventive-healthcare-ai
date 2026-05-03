@@ -3,37 +3,64 @@ from app.core import VALID_TIMEZONES
 
 # response models
 class MessageResponse(BaseModel):
-    message: str
+    message: str = Field(..., description="A status or result message from the server.")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "User logged in successfully"
+            }
+        }
+    )
     
 class TokenResponse(BaseModel):
-    message: str
-    access_token: str
-    token_type: str
+    message: str = Field(..., description="A success message")
+    access_token: str = Field(..., description="The JWT access token used for authentication")
+    token_type: str = Field("bearer", description="The type of token (usually 'bearer')")
     
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "User logged in successfully",
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                "token_type": "bearer"
+            }
+        }
+    )
+
 class UserResponse(BaseModel):
-    id: int
-    email: str
-    timezone: str 
+    id: int = Field(..., description="The unique identifier for the user.")
+    email: str = Field(..., description="The registered email address.")
+    timezone: str = Field(..., description="The user's preferred IANA timezone.")
     
-    model_config = ConfigDict(from_attributes=True, extra="forbid")
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": 1,
+                "email": "user@example.com",
+                "timezone": "Asia/Kolkata"
+            }
+        }
+    )
 
 
 # validation models
 class UserCreate(BaseModel):
     email: EmailStr = Field(
         ..., 
-        description="The email address of the user. Must be a valid email format."
+        description="A valid email address for the user account."
     )
     password: str = Field(
         ..., 
         min_length=8, 
         max_length=64,
-        description="The user's password. Must be between 8 and 64 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)."
+        description="The user's password. Must include uppercase, lowercase, numbers, and special characters."
     )
     
     timezone: str = Field(
-        ...,
-        description="User timezone (e.g., Asia/Kolkata, America/New_York)"
+        "UTC",
+        description="User timezone (e.g., Asia/Kolkata). Defaults to UTC."
     )
 
     @field_validator("timezone")
@@ -41,7 +68,7 @@ class UserCreate(BaseModel):
     def validate_timezone(cls, v: str) -> str:
         v = v.strip()
         if v not in VALID_TIMEZONES:
-            raise ValueError(f"Invalid timezone. Must be a valid IANA timezone (e.g., Asia/Kolkata, America/New_York)")
+            raise ValueError(f"Invalid timezone. Please provide a valid IANA timezone name.")
         return v
 
     @field_validator("email")
@@ -52,7 +79,7 @@ class UserCreate(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        """Validate password strength requirements"""
+        """Ensure password meets complexity requirements for high security."""
         
         if not any(char.isdigit() for char in v):
             raise ValueError("Password must contain at least one digit (0-9)")
@@ -65,15 +92,17 @@ class UserCreate(BaseModel):
         
         special_chars = "!@#$%^&*()_+-=[]{}|;:,.<>?"
         if not any(char in special_chars for char in v):
-            raise ValueError("Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)")
+            raise ValueError(f"Password must contain at least one special character from: {special_chars}")
         
         return v 
 
     model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "email": "user@example.com",
-                "password": "StrongP@ssword123",
+                "password": "SecureP@ssword123!",
                 "timezone": "Asia/Kolkata"
             }
         }
@@ -87,7 +116,7 @@ class UserLogin(BaseModel):
     password: str = Field(
         ..., 
         min_length=1,
-        description="The user's password.",
+        description="The user's account password.",
     )
     
     @field_validator("email")
@@ -96,10 +125,12 @@ class UserLogin(BaseModel):
         return v.lower().strip()
     
     model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "email": "user@example.com",
-                "password": "SecurePassword123"
+                "password": "SecurePassword123!"
             }
         }
     )

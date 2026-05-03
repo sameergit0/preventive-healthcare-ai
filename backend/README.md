@@ -22,24 +22,27 @@ It follows a **modular, production-ready backend design** suitable for real-worl
 * 🔐 **JWT Authentication** – Secure login & user management
 * 📊 **Expanded Health Metrics** – Tracking for Steps, Sleep (Hours & Quality), Water, Activity, Sedentary time, and Nutrition (Sugar/Fruits)
 * 👤 **Profile Management** – BMI calculation, waist circumference tracking, and photo management
-* 📈 **Advanced Analytics Engine** – Weighted health scoring, robust trends, and personalized recommendations across all metrics
+* 🏥 **Medical History** – tracking for chronic conditions (Diabetes, Hypertension, Heart Disease, Asthma) and cholesterol
+* 🤖 **Digital Health Coach** – Prioritized task system that analyzes performance gaps to provide actionable improvements
+* 📈 **Advanced Analytics Engine** – Weighted health scoring, robust trends, and personalized insights
 * 📂 **File Handling** – Profile image upload & static serving
 * 🔄 **Database Migrations** – Alembic-based schema versioning
-* ⚡ **Optimized APIs** – FastAPI async support
-* 📝 **Structured Logging** – Debuggable and production-friendly logs
+* ⚡ **Optimized APIs** – FastAPI async support with structured response models
+* 📝 **Structured Logging** – Professional logging across all core modules for production observability
 
 ---
 
 ## 🛠 Tech Stack
 
-* **Backend**: FastAPI, Python 3.12+
-* **Database**: Neon PostgreSQL (serverless) + SQLAlchemy ORM
+* **Backend**: FastAPI (Python 3.12+)
+* **Database**: Neon PostgreSQL (Serverless) + SQLAlchemy ORM
 * **Migrations**: Alembic
-* **Auth**: JWT + bcrypt
-* **Validation**: Pydantic
+* **Auth**: JWT + Passlib (bcrypt)
+* **Validation**: Pydantic v2
 * **Server**: Uvicorn
-* **Config**: python-dotenv
-* **Containerization**: Docker, Docker Compose
+* **Environment**: python-dotenv
+* **Dependency Management**: uv
+* **Containerization**: Docker & Docker Compose
 
 ---
 
@@ -47,16 +50,18 @@ It follows a **modular, production-ready backend design** suitable for real-worl
 
 ```
 app/
-├── api/v1/endpoints/   # API routes
-├── core/               # Security & configs
-├── db/                 # DB setup
-├── models/             # ORM models
-├── schemas/            # Pydantic schemas
-├── utils/              # Helpers (logging, timezone)
-└── main.py             # Entry point
+├── api/v1/endpoints/   # Auth, Metrics, Lifestyle, Profile, Medical, Analytics
+├── core/               # Security, App Configs, Health Constants
+├── db/                 # DB Session, Base Model, Dependency Injection
+├── models/             # SQLAlchemy ORM Models (User, Health, Profile, etc.)
+├── schemas/            # Pydantic Models for Request/Response Validation
+├── utils/              # Analytics Helpers, Logging, Lifespan, Timezone
+└── main.py             # Entry point (FastAPI App & Middleware)
 
-alembic/                # DB migrations
-test/                   # Unit tests
+alembic/                # Database Migrations (Versions & Env)
+logs/                   # Application log files
+test/                   # Unit and Integration tests
+uploads/                # User-uploaded profile photos
 ```
 
 ---
@@ -85,8 +90,6 @@ uv venv
 
 ```bash
 uv sync
-# OR
-pip install -e .
 ```
 
 ---
@@ -186,32 +189,31 @@ docker compose down
 ## 🔌 Core API Modules
 
 ### 🔐 Authentication
+* Signup / Login / Current User session management.
 
-* Signup / Login / Current User
+### 🏥 Medical History
+* Track chronic conditions (Diabetes, BP, Heart Disease, etc.) to influence health scoring.
 
-### 🌐 Common Timezones
-
-* Timezone
-
-
-### 👤 Profile
-
-* Create, update, delete profile
-* Upload profile image
+### 👤 Profile & Lifestyle
+* **Profile**: Management of BMI, physical goals, and profile photo management.
+* **Lifestyle**: Tracking of Stress, Work-Life Balance, and habits (Alcohol/Tobacco).
 
 ### 📊 Health Metrics
+* Daily logs for: Steps, Sleep, Water, Activity, Sedentary, Sugar, and Fruits.
+* Context-aware **Upsert** logic (Update or Insert depending on date).
 
-* Daily logs (Upsert logic)
-* Tracking for: Steps, Sleep (Hours/Quality), Water, Activity/Sedentary minutes, Sugar, and Fruits
-* Time-series tracking
+### 📈 Analytics Engine & Digital Coach
+The Analytics engine provides a holistic view of user wellness by correlating behavior with medical and physical context.
 
-### 📈 Analytics Engine
+* **`/analytics/status`**: **Dashboard Hero API**. Returns an all-time overall health score and risk category.
+* **`/analytics/summary`**: **Health Summary API**. Aggregates core health metrics (Steps, Sleep, Water, etc.) over a filtered period.
+* **`/analytics/insights`**: **Behavioral Analysis**. Generates personalized insights based on recent trends.
+* **`/analytics/trends`**: **Progress Visualization**. Provides day-by-day health scores.
+* **`/analytics/recommendations`**: **Digital Coach**. Prioritizes tasks to address the most critical health gaps.
 
-* **Weighted Health Score**: Professional algorithm calculating overall wellness (0-100)
-* **Trend Analysis**: Percentage-based comparisons between current and previous periods
-* **Personalized Insights**: Auto-generated severity-based insights for all health categories
-* **Actionable Recommendations**: High/Medium/Low priority health suggestions
-* **Score History**: Historical health score visualization data
+### 🛠 System Utilities
+* **`/health`**: Comprehensive health check (Database connectivity & response time).
+* **`/`**: Root welcome endpoint.
 
 ---
 
@@ -227,18 +229,17 @@ pytest
 
 * Use **Gunicorn + Uvicorn workers**
 * Deploy behind **Nginx**
-* Store secrets securely
-* Enable HTTPS
+* Store secrets securely and enable HTTPS
 * Use Docker for containerization
 
 ---
 
 ## 🚀 Future Improvements
 
-* 🤖 AI-based health recommendations
+* 🤖 AI-powered health recommendations
 * 📱 Mobile app integration
-* 📊 Advanced ML analytics
-* 🔔 Real-time alerts
+* 📊 Advanced ML predictive analytics
+* 🔔 Real-time alerts & notifications
 
 ---
 

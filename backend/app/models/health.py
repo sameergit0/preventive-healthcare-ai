@@ -1,7 +1,7 @@
 from app.db import Base
 from sqlalchemy import (
-    Column, String, Integer, JSON, Float, ForeignKey, DateTime, func, 
-    Date, Index, UniqueConstraint, CheckConstraint
+    Column, Integer, JSON, Float, ForeignKey, DateTime, func, 
+    Date, Index, UniqueConstraint, CheckConstraint, Enum
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.mutable import MutableList
@@ -17,7 +17,10 @@ class HealthMetric(Base):
     water_intake = Column(Float, nullable=True)
     food_log = Column(MutableList.as_mutable(JSON), default=lambda: [], nullable=False)
 
-    sleep_quality = Column(String, nullable=True)
+    sleep_quality = Column(
+        Enum('poor', 'average', 'good', 'excellent', name='sleep_quality_enum'), 
+        nullable=True
+    )
 
     activity_minutes = Column(Integer, nullable=True)
     sedentary_minutes = Column(Integer, nullable=True)
@@ -41,8 +44,4 @@ class HealthMetric(Base):
         CheckConstraint("sedentary_minutes >= 0 AND sedentary_minutes <= 1440", name="check_sedentary_range"),
         CheckConstraint("nutrition_sugar >= 0 AND nutrition_sugar <= 500", name="check_sugar_range"),
         CheckConstraint("nutrition_fruits >= 0 AND nutrition_fruits <= 20", name="check_fruits_range"),
-        CheckConstraint(
-            "sleep_quality IN ('poor','average','good','excellent')",
-            name="check_sleep_quality"
-        )
     )
