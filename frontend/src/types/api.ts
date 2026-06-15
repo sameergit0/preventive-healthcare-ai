@@ -55,15 +55,62 @@ export interface Profile {
   bmi_category: string | null
 }
 
-export interface ProfileGetResponse {
-  message: string
-  profile: Profile | null
+export type ProfileGetResponse = Profile
+
+// Lifestyle
+export type TobaccoType = 'never' | 'daily' | 'weekly' | 'occasionally' | 'former'
+export type AlcoholFreq = 'never' | 'rarely' | 'sometimes' | 'often' | 'daily'
+
+export const TOBACCO_OPTIONS: { value: TobaccoType; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'occasionally', label: 'Occasionally' },
+  { value: 'former', label: 'Former' },
+]
+
+export const ALCOHOL_OPTIONS: { value: AlcoholFreq; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'rarely', label: 'Rarely' },
+  { value: 'sometimes', label: 'Sometimes' },
+  { value: 'often', label: 'Often' },
+  { value: 'daily', label: 'Daily' },
+]
+
+export interface LifestyleCreate {
+  tobacco_type?: TobaccoType | null
+  passive_smoke?: boolean | null
+  alcohol_freq?: AlcoholFreq | null
+  alcohol_binge?: boolean | null
+  stress_level?: number | null
+  work_life_balance?: number | null
+  screen_time_hours?: number | null
 }
 
-export interface ProfilePhotoResponse {
-  message: string
-  image_url: string | null
+export interface LifestyleResponse extends LifestyleCreate {
+  id?: number
 }
+
+// Medical History
+export interface MedicalHistoryCreate {
+  diabetes?: boolean | null
+  bp?: boolean | null
+  high_cholesterol?: boolean | null
+  heart_disease?: boolean | null
+  asthma?: boolean | null
+}
+
+export interface MedicalHistoryResponse extends MedicalHistoryCreate {
+  id?: number
+}
+
+export const MEDICAL_CONDITIONS: { key: keyof MedicalHistoryCreate; label: string; description: string }[] = [
+  { key: 'diabetes', label: 'Diabetes', description: 'Type 1 or Type 2 diabetes' },
+  { key: 'bp', label: 'High Blood Pressure', description: 'Hypertension' },
+  { key: 'high_cholesterol', label: 'High Cholesterol', description: 'Elevated LDL levels' },
+  { key: 'heart_disease', label: 'Heart Disease', description: 'Any cardiovascular condition' },
+  { key: 'asthma', label: 'Asthma', description: 'Respiratory condition' },
+]
 
 // Health logs
 export type Meal = 'breakfast' | 'lunch' | 'dinner'
@@ -106,22 +153,28 @@ export interface AllLogsResponse {
   total: number
 }
 
-// Analytics
+// Analytics — matches backend schemas exactly
+
+// MetricSummary — matches backend app.schemas.analytics.MetricSummary
 export interface MetricSummary {
-  average: number | null
-  total: number | null
-  max: number | null
-  min: number | null
+  avg: number
+  min: number
+  max: number
+  total: number
   days_recorded: number
-  target: number | null
-  achievement_rate: number | null
+  target: number
+  achievement_rate: number
 }
 
-export interface HealthSummaryResponse {
-  period_start: string
-  period_end: string
-  total_days: number
-  active_days: number
+// CategoricalMetricSummary — matches backend
+export interface CategoricalMetricSummary {
+  most_frequent: string | null
+  recorded_days: number
+}
+
+// OverallSummaryResponse — matches backend
+export interface OverallSummaryResponse {
+  message: string
   steps: MetricSummary
   sleep: MetricSummary
   water: MetricSummary
@@ -129,57 +182,59 @@ export interface HealthSummaryResponse {
   sedentary: MetricSummary
   sugar: MetricSummary
   fruits: MetricSummary
+  sleep_quality: CategoricalMetricSummary
 }
 
-export type MetricType = 'steps' | 'sleep' | 'water' | 'activity' | 'sedentary' | 'sugar' | 'fruits'
-export type Severity = 'good' | 'warning' | 'critical'
-export type Priority = 'high' | 'medium' | 'low'
-
-export interface Insight {
-  type: MetricType
+// HealthInsight — matches backend
+export interface HealthInsight {
+  category: string
   message: string
-  severity: Severity
+  priority: string
+  trend: string | null
 }
 
-export interface HealthInsightsResponse {
-  overall_score: number
-  insights: Insight[]
+// InsightsResponse — matches backend
+export interface InsightsResponse {
+  health_score: number
+  risk_level: string
+  insights: HealthInsight[]
+  summary_message: string
 }
 
-export interface MetricTrend {
-  current_avg: number | null
-  previous_avg: number | null
-  change_percent: number | null
+// TrendDataPoint — matches backend
+export interface TrendDataPoint {
+  log_date: string
+  health_score: number
 }
 
-export interface HealthTrendsResponse {
-  steps: MetricTrend
-  sleep: MetricTrend
-  water: MetricTrend
-  activity: MetricTrend
-  sedentary: MetricTrend
-  sugar: MetricTrend
-  fruits: MetricTrend
+// TrendsResponse — matches backend
+export interface TrendsResponse {
+  message: string
+  data: TrendDataPoint[]
 }
 
+// Recommendation — matches backend
 export interface Recommendation {
-  type: MetricType
-  message: string
-  priority: Priority
+  task: string
+  benefit: string
+  priority: string
+  category: string
 }
 
-export interface HealthRecommendationsResponse {
+// RecommendationsResponse — matches backend
+export interface RecommendationsResponse {
+  message: string
   recommendations: Recommendation[]
 }
 
-export interface HealthScorePoint {
-  date: string
-  score: number | null
+// HealthStatusResponse — matches backend
+export interface HealthStatusResponse {
+  health_score: number
+  risk_level: string
+  summary_message: string
 }
 
-export interface HealthScoreHistoryResponse {
-  scores: HealthScorePoint[]
-}
+export type MetricKey = 'steps' | 'sleep' | 'water' | 'activity' | 'sedentary' | 'sugar' | 'fruits'
 
 export interface TimezonesResponse {
   grouped: Record<string, string[]>

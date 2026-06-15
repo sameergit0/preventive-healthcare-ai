@@ -17,12 +17,12 @@ export function AppLayout() {
   const clear = useAuthStore((s) => s.clear)
   const navigate = useNavigate()
   const { data } = useProfile()
-  const profile = data?.profile
+  const profile = data
   const [menuOpen, setMenuOpen] = useState(false)
 
   const logout = () => {
     clear()
-    navigate('/login', { replace: true })
+    navigate('/', { replace: true })
   }
 
   return (

@@ -2,21 +2,19 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { qk } from '@/lib/queryKeys'
 import type {
-  HealthInsightsResponse,
-  HealthRecommendationsResponse,
-  HealthScoreHistoryResponse,
-  HealthSummaryResponse,
-  HealthTrendsResponse,
+  OverallSummaryResponse,
+  InsightsResponse,
+  TrendsResponse,
+  RecommendationsResponse,
+  HealthStatusResponse,
 } from '@/types/api'
-
-const params = (start_date: string, end_date: string) => ({ start_date, end_date })
 
 export function useSummary(start: string, end: string, enabled = true) {
   return useQuery({
     queryKey: qk.analytics.summary(start, end),
     queryFn: async () => {
-      const { data } = await api.get<HealthSummaryResponse>('/api/v1/analytics/summary', {
-        params: params(start, end),
+      const { data } = await api.get<OverallSummaryResponse>('/api/v1/analytics/summary', {
+        params: { start_date: start, end_date: end },
       })
       return data
     },
@@ -24,13 +22,11 @@ export function useSummary(start: string, end: string, enabled = true) {
   })
 }
 
-export function useInsights(start: string, end: string, enabled = true) {
+export function useInsights(enabled = true) {
   return useQuery({
-    queryKey: qk.analytics.insights(start, end),
+    queryKey: qk.analytics.insights,
     queryFn: async () => {
-      const { data } = await api.get<HealthInsightsResponse>('/api/v1/analytics/insights', {
-        params: params(start, end),
-      })
+      const { data } = await api.get<InsightsResponse>('/api/v1/analytics/insights')
       return data
     },
     enabled,
@@ -41,8 +37,8 @@ export function useTrends(start: string, end: string, enabled = true) {
   return useQuery({
     queryKey: qk.analytics.trends(start, end),
     queryFn: async () => {
-      const { data } = await api.get<HealthTrendsResponse>('/api/v1/analytics/trends', {
-        params: params(start, end),
+      const { data } = await api.get<TrendsResponse>('/api/v1/analytics/trends', {
+        params: { start_date: start, end_date: end },
       })
       return data
     },
@@ -50,28 +46,22 @@ export function useTrends(start: string, end: string, enabled = true) {
   })
 }
 
-export function useRecommendations(start: string, end: string, enabled = true) {
+export function useRecommendations(enabled = true) {
   return useQuery({
-    queryKey: qk.analytics.recommendations(start, end),
+    queryKey: qk.analytics.recommendations,
     queryFn: async () => {
-      const { data } = await api.get<HealthRecommendationsResponse>(
-        '/api/v1/analytics/recommendations',
-        { params: params(start, end) },
-      )
+      const { data } = await api.get<RecommendationsResponse>('/api/v1/analytics/recommendations')
       return data
     },
     enabled,
   })
 }
 
-export function useScoreHistory(start: string, end: string, includeEmpty = false, enabled = true) {
+export function useStatus(enabled = true) {
   return useQuery({
-    queryKey: qk.analytics.scoreHistory(start, end, includeEmpty),
+    queryKey: qk.analytics.status,
     queryFn: async () => {
-      const { data } = await api.get<HealthScoreHistoryResponse>(
-        '/api/v1/analytics/score-history',
-        { params: { ...params(start, end), include_empty: includeEmpty } },
-      )
+      const { data } = await api.get<HealthStatusResponse>('/api/v1/analytics/status')
       return data
     },
     enabled,

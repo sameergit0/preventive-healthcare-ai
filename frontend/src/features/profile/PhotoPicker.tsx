@@ -46,7 +46,7 @@ export function PhotoPicker({
       >
         <input {...getInputProps()} />
         {display ? (
-          <img src={display} alt="" className="h-full w-full object-cover" />
+          <img src={display.includes('blob:') ? display : `${display}?v=${Date.now()}`} alt="" className="h-full w-full object-cover" />
         ) : (
           <Camera className="h-10 w-10 text-on-surface-variant" />
         )}

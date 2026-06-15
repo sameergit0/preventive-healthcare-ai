@@ -7,7 +7,7 @@ export function ProtectedRoute() {
   const token = useAuthStore((s) => s.accessToken)
   const location = useLocation()
   if (!token || isTokenExpired(token)) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return <Navigate to="/" replace state={{ from: location }} />
   }
   return <Outlet />
 }
@@ -29,7 +29,7 @@ export function RequireProfile() {
       </div>
     )
   }
-  if (data && data.profile === null) {
+  if (!data) {
     return <Navigate to="/profile/create" replace />
   }
   return <Outlet />

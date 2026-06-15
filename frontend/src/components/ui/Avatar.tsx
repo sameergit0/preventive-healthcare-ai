@@ -11,7 +11,7 @@ export function Avatar({ src, name, size = 40, className }: { src?: string | nul
       style={{ width: size, height: size, fontSize: size * 0.4 }}
     >
       {src && !errored ? (
-        <img src={src} alt={name ?? 'avatar'} className="h-full w-full object-cover" onError={() => setErrored(true)} />
+        <img src={`${src}?v=${Date.now()}`} alt={name ?? 'avatar'} className="h-full w-full object-cover" onError={() => setErrored(true)} />
       ) : (
         <span>{initials}</span>
       )}

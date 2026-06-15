@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute, PublicOnlyRoute, RequireProfile } from './guards'
+import { HomePage } from '@/features/home/HomePage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { SignupPage } from '@/features/auth/SignupPage'
 import { ProfileCreatePage } from '@/features/profile/ProfileCreatePage'
@@ -12,6 +13,10 @@ import { DashboardPage } from '@/features/dashboard/DashboardPage'
 import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 
 export const router = createBrowserRouter([
+  // Public home page
+  { path: '/', element: <HomePage /> },
+
+  // Auth pages (redirect to dashboard if already logged in)
   {
     element: <PublicOnlyRoute />,
     children: [
@@ -24,6 +29,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // Protected app routes
   {
     element: <ProtectedRoute />,
     children: [
@@ -50,6 +57,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  { path: '/', element: <Navigate to="/dashboard" replace /> },
-  { path: '*', element: <Navigate to="/dashboard" replace /> },
+
+  // Catch-all: redirect to home
+  { path: '*', element: <Navigate to="/" replace /> },
 ])

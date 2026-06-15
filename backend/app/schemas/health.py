@@ -106,8 +106,8 @@ class DailyHealthLogCreate(BaseModel):
     steps: Optional[int] = Field(
         None, 
         ge=0, 
-        le=100000, 
-        description="Daily steps (0-100k)"
+        le=20000, 
+        description="Daily steps (0-20k)"
     )
     sleep_hours: Optional[float] = Field(
         None, 

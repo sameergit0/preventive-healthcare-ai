@@ -9,7 +9,7 @@ import { useLogin } from './api'
 import { loginSchema, type LoginForm } from '@/lib/validation'
 import { api, getErrorMessage } from '@/lib/api'
 import { toast } from 'sonner'
-import type { ProfileGetResponse } from '@/types/api'
+import type { Profile, LoginRequest } from '@/types/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -23,9 +23,41 @@ export function LoginPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await login.mutateAsync(values)
-      const { data } = await api.get<ProfileGetResponse>('/api/v1/profile/')
-      navigate(data.profile === null ? '/profile/create' : '/dashboard', { replace: true })
+      await login.mutateAsync(values as LoginRequest)
+      
+      // Check onboarding status
+      let profileData: Profile | null = null
+      try {
+        const { data } = await api.get<Profile>('/api/v1/profile/')
+        profileData = data
+      } catch (e: any) {
+        if (e.response?.status !== 404) throw e
+      }
+
+      if (!profileData) {
+        navigate('/profile/create', { replace: true })
+        return
+      }
+
+      try {
+        await api.get('/api/v1/lifestyle/')
+        try {
+          await api.get('/api/v1/medical-history/')
+          navigate('/dashboard', { replace: true })
+        } catch (e: any) {
+          if (e.response?.status === 404) {
+            navigate('/profile/create', { replace: true })
+          } else {
+            throw e
+          }
+        }
+      } catch (e: any) {
+        if (e.response?.status === 404) {
+          navigate('/profile/create', { replace: true })
+        } else {
+          throw e
+        }
+      }
     } catch (e) {
       toast.error(getErrorMessage(e))
     }

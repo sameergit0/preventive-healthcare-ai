@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { qk } from '@/lib/queryKeys'
-import type { Profile, ProfileGetResponse, ProfilePhotoResponse } from '@/types/api'
+import type { Profile, ProfileGetResponse } from '@/types/api'
 
 export function useProfile() {
   return useQuery({
@@ -53,7 +53,7 @@ export function useUpdatePhoto() {
     mutationFn: async (file: File) => {
       const fd = new FormData()
       fd.append('file', file)
-      const { data } = await api.put<ProfilePhotoResponse>('/api/v1/profile/photo', fd, {
+      const { data } = await api.patch<Profile>('/api/v1/profile/', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       return data

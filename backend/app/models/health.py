@@ -37,7 +37,7 @@ class HealthMetric(Base):
         Index("idx_user_log_date", "user_id", "log_date"),
         UniqueConstraint("user_id", "log_date", name="uq_user_daily_log"),
 
-        CheckConstraint("steps >= 0 AND steps <= 100000", name="check_steps_range"),
+        CheckConstraint("steps >= 0 AND steps <= 20000", name="check_steps_range"),
         CheckConstraint("sleep_hours >= 0 AND sleep_hours <= 24", name="check_sleep_range"),
         CheckConstraint("water_intake >= 0 AND water_intake <= 10", name="check_water_range"),
         CheckConstraint("activity_minutes >= 0 AND activity_minutes <= 1440", name="check_activity_range"),
