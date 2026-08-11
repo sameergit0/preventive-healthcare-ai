@@ -161,8 +161,8 @@ export function DashboardPage() {
                   value={status.data?.health_score ?? 0} 
                   size={112} 
                   stroke={10} 
-                  className="text-primary"
-                  trackClassName="text-primary-container/30"
+                  fillClassName="text-error"
+                  trackClassName="text-error-container/40"
                 >
                   <div className="flex flex-col items-center">
                     <span className="text-display-sm font-black tracking-tighter text-on-surface">{status.data?.health_score ?? '—'}</span>

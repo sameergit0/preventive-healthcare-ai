@@ -103,7 +103,7 @@ export function AnalyticsPage() {
               {insights.isLoading ? (
                 <Skeleton className="h-32 w-32 rounded-full" />
               ) : (
-                <ProgressRing value={insights.data?.health_score ?? 0} size={128} stroke={12} fillClassName="text-primary">
+                <ProgressRing value={insights.data?.health_score ?? 0} size={128} stroke={12} fillClassName="text-error" trackClassName="text-error-container/40">
                   <div className="text-center">
                     <p className="text-headline-lg text-on-surface">{insights.data?.health_score ?? 0}</p>
                     <p className="text-label-md text-on-surface-variant">score</p>

@@ -16,7 +16,7 @@ export function ProgressRing({
   stroke = 8,
   className,
   trackClassName = 'text-surface-container-high',
-  fillClassName = 'text-tertiary',
+  fillClassName = 'text-error',
   children,
 }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(100, value))
